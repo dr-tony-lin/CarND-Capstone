@@ -10,7 +10,7 @@ class Controller(object):
     def __init__(self, vehicle):
         self.vehicle = vehicle
         self.yaw_controller = YawController(vehicle, 0.1)
-        self.throttle_controller = PID(10.5795, 0, -18.4359, -12.123, 0.2)
+        self.throttle_controller = PID(0.1, 0.05, 1.2, 0, 0.4)
         self.velocity_filter = LowPassFilter(0.5, 0.02)
         self.last_time = rospy.get_time()
 
