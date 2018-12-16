@@ -35,6 +35,4 @@ class Controller(object):
             decel = max(error, self.vehicle.decel_limit)
             brake = abs(decel) * self.vehicle.mass * self.vehicle.wheel_radius
         return throttle, brake, steering
-    
-    def compute_break(self, accel):
-        return accel * self.vehicle.mass * self.vehicle.wheel_radius
+
