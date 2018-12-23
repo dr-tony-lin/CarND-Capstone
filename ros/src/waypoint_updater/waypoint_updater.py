@@ -78,7 +78,7 @@ class WaypointUpdater(object):
     def generate_lane(self, idx, pts):
         lane = Lane()
         lane.header = self.waypoints_header
-        if self.traffic_light_idx and self.traffic_light_idx < idx+pts:
+        if self.traffic_light_idx and idx <= self.traffic_light_idx < idx+pts:
             lane.waypoints = self.decelerate_waypoints(idx, pts)
         else:
             lane.waypoints = self.waypoints[idx:idx+pts]
