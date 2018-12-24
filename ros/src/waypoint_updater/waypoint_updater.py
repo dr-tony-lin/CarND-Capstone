@@ -24,10 +24,6 @@ as well as to verify your TL classifier.
 TODO (for Yousuf and Aaron): Stopline location for each traffic light.
 '''
 
-LOOKAHEAD_WPS              = 20 # Number of waypoints we will publish. You can change this number
-WAYPOINTS_UPDATE_FREQUENCY = 50 # Waypoint update frequency, 50 Hz
-MAX_DECEL                  = 0.5
-
 class WaypointUpdater(object):
     def __init__(self):
         rospy.init_node('waypoint_updater')
@@ -38,6 +34,11 @@ class WaypointUpdater(object):
         #rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
+
+        self.lookahead_wps = rospy.get_param('~lookahead_wps', 40)
+        self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
+        self.traffic_light_distance = rospy.get_param('~traffic_light_distance', 10)
+        self.max_deceleration = rospy.get_param('~max_deceleration', 1.0)
 
         self.pose = None
         self.waypoints = None
@@ -50,12 +51,11 @@ class WaypointUpdater(object):
         self.loop()
         
     def loop(self):
-        rate = rospy.Rate(WAYPOINTS_UPDATE_FREQUENCY)
+        rate = rospy.Rate(self.waypoint_update_frequency)
         while not rospy.is_shutdown():
             if self.pose and self.waypoints_kd:
-#                rospy.loginfo("Update waypoints ...")
                 closest_waypoint_idx = self.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
-                self.publish_waypoints(closest_waypoint_idx, LOOKAHEAD_WPS)
+                self.publish_waypoints(closest_waypoint_idx, self.lookahead_wps)
             rate.sleep()
     
     def normalize_index(self, idx):
@@ -90,10 +90,10 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
-            dist = self.distance(i, self.traffic_light_idx - 2) if i <= self.traffic_light_idx - 2 else 0
-            rospy.loginfo("distance: %f", dist)
-            v = math.sqrt(2 * MAX_DECEL * dist)
-            rospy.loginfo("Velocity: %f", v)
+            d = self.distance(i, self.traffic_light_idx)
+            dist = max(0, self.distance(i, self.traffic_light_idx) - self.traffic_light_distance)
+            v = math.sqrt(2.0 * self.max_deceleration * dist)
+            rospy.loginfo("%s -> %s, distance: %f, %f, velocity: %f", i, self.traffic_light_idx, d, dist, v)
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
         return waypoints
@@ -110,10 +110,12 @@ class WaypointUpdater(object):
             self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in self.waypoints]
             self.waypoints_kd = KDTree(self.waypoints_2d)
             dl = lambda a, b: math.sqrt((a.x-b.x)**2 + (a.y-b.y)**2  + (a.z-b.z)**2)
-            self.waypoints_dist = [dl(self.waypoints[i-1].pose.pose.position, self.waypoints[i].pose.pose.position) for i in range(1, len(self.waypoints))]
+            self.waypoints_dist = [dl(self.waypoints[i-1].pose.pose.position, self.waypoints[i].pose.pose.position) if i > 0 else 0 for i in range(0, len(self.waypoints))]
+            for i in range(2, len(self.waypoints)):
+                self.waypoints_dist[i] += self.waypoints_dist[i-1]
             rospy.loginfo("Initialized waypoints %s", self.waypoints_kd)
-#            for p in self.waypoints:
-#                rospy.loginfo("(%s,%s,%s,%s)", p.pose.pose.position.x, p.pose.pose.position.y, p.twist.twist.linear.x, p.twist.twist.angular.z)
+#            for i in range(0, len(self.waypoints)):
+#                rospy.loginfo("(%f,%f,%f,%f, %f", self.waypoints[i].pose.pose.position.x, self.waypoints[i].pose.pose.position.y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints_dist[i])
             
     def traffic_cb(self, msg):
         self.traffic_light_idx = msg.data

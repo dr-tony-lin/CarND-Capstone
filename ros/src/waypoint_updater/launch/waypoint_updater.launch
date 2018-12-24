@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
 <launch>
-    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" />
+    <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" >
+        <param name="lookahead_wps" value="40" />
+        <param name="waypoint_update_frequency" value="50" />
+        <param name="traffic_light_distance" value="10." />
+        <param name="max_deceleration" value="1." />
+    </node>
 </launch>
