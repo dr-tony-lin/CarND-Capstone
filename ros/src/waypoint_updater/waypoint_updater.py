@@ -37,7 +37,8 @@ class WaypointUpdater(object):
 
         self.lookahead_wps = rospy.get_param('~lookahead_wps', 40)
         self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
-        self.traffic_light_distance = rospy.get_param('~traffic_light_distance', 10)
+        self.traffic_light_stop_distance = rospy.get_param('~traffic_light_stop_distance', 15)
+        self.traffic_light_lookahead_wps = rospy.get_param('~traffic_light_lookahead_wps', 100)
         self.max_deceleration = rospy.get_param('~max_deceleration', 1.0)
 
         self.pose = None
@@ -47,7 +48,8 @@ class WaypointUpdater(object):
         self.waypoints_kd = None
         self.waypoints_dist = None
         self.traffic_light_idx = None
-        
+        self.last_traffic = -1
+
         self.loop()
         
     def loop(self):
@@ -69,6 +71,7 @@ class WaypointUpdater(object):
         v_pos = np.array(pos) - closest_pos
         if np.dot(v_way, v_pos) > 0:
             idx = self.normalize_index(idx + 1)
+        rospy.loginfo("Closest wp: %d, (%f,%f)->(%f,%f)",idx, pos[0], pos[1], self.waypoints_2d[idx][0], self.waypoints_2d[idx][1])
         return idx
     
     def publish_waypoints(self, idx, pts):
@@ -78,7 +81,7 @@ class WaypointUpdater(object):
     def generate_lane(self, idx, pts):
         lane = Lane()
         lane.header = self.waypoints_header
-        if self.traffic_light_idx and idx <= self.traffic_light_idx < idx+pts:
+        if self.traffic_light_idx and idx + 2 < self.traffic_light_idx < idx + self.traffic_light_lookahead_wps:
             lane.waypoints = self.decelerate_waypoints(idx, pts)
         else:
             lane.waypoints = self.waypoints[idx:idx+pts]
@@ -90,12 +93,11 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
-            d = self.distance(i, self.traffic_light_idx)
-            dist = max(0, self.distance(i, self.traffic_light_idx) - self.traffic_light_distance)
-            v = math.sqrt(2.0 * self.max_deceleration * dist)
-            rospy.loginfo("%s -> %s, distance: %f, %f, velocity: %f", i, self.traffic_light_idx, d, dist, v)
+            dist = self.distance(i, self.traffic_light_idx) - self.traffic_light_stop_distance
+            v = math.sqrt(2.0 * self.max_deceleration * dist) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
+            rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_idx, dist, v)
         return waypoints
         
     def pose_cb(self, msg):
@@ -114,8 +116,8 @@ class WaypointUpdater(object):
             for i in range(2, len(self.waypoints)):
                 self.waypoints_dist[i] += self.waypoints_dist[i-1]
             rospy.loginfo("Initialized waypoints %s", self.waypoints_kd)
-#            for i in range(0, len(self.waypoints)):
-#                rospy.loginfo("(%f,%f,%f,%f, %f", self.waypoints[i].pose.pose.position.x, self.waypoints[i].pose.pose.position.y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints_dist[i])
+ #           for i in range(0, len(self.waypoints)):
+ #               rospy.loginfo("(%f,%f,%f,%f, %f", self.waypoints[i].pose.pose.position.x, self.waypoints[i].pose.pose.position.y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints_dist[i])
             
     def traffic_cb(self, msg):
         self.traffic_light_idx = msg.data
