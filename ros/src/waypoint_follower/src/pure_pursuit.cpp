@@ -30,13 +30,8 @@
 
 #include "pure_pursuit_core.h"
 
-constexpr int LOOP_RATE = 30; //processing frequency
-
-
 int main(int argc, char **argv)
 {
-
-
   // set up ros
   ros::init(argc, argv, "pure_pursuit");
 
@@ -44,10 +39,25 @@ int main(int argc, char **argv)
   ros::NodeHandle private_nh("~");
 
   bool linear_interpolate_mode;
-  private_nh.param("linear_interpolate_mode", linear_interpolate_mode, bool(true));
-  ROS_INFO_STREAM("linear_interpolate_mode : " << linear_interpolate_mode);
+  int publish_frequency;
+  int subscriber_queue_length;
+  double const_lookahead_distance;
+  double minimum_lookahead_distance;
+  double lookahead_distance_ratio;
+  double maximum_lookahead_distance_ratio;
 
-  waypoint_follower::PurePursuit pp(linear_interpolate_mode);
+  private_nh.param("linear_interpolate_mode", linear_interpolate_mode, bool(true));
+  private_nh.param("publish_frequency", publish_frequency, 30);
+  private_nh.param("subscriber_queue_length", subscriber_queue_length, 2);
+  private_nh.param("const_lookahead_distance", const_lookahead_distance, double(4.0));
+  private_nh.param("minimum_lookahead_distance", minimum_lookahead_distance, double(6.0));
+  private_nh.param("lookahead_distance_ratio", lookahead_distance_ratio, double(4.0));
+  private_nh.param("maximum_lookahead_distance_ratio", maximum_lookahead_distance_ratio, double(15));
+
+  ROS_INFO_STREAM("linear_interpolate_mode : " << linear_interpolate_mode);
+  
+  waypoint_follower::PurePursuit pp(linear_interpolate_mode, lookahead_distance_ratio, minimum_lookahead_distance, 
+                                    maximum_lookahead_distance_ratio, const_lookahead_distance);
 
   ROS_INFO("set publisher...");
   // publish topic
@@ -56,14 +66,14 @@ int main(int argc, char **argv)
   ROS_INFO("set subscriber...");
   // subscribe topic
   ros::Subscriber waypoint_subscriber =
-      nh.subscribe("final_waypoints", 10, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
+      nh.subscribe("final_waypoints", subscriber_queue_length, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
   ros::Subscriber ndt_subscriber =
-      nh.subscribe("current_pose", 10, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
+      nh.subscribe("current_pose", subscriber_queue_length, &waypoint_follower::PurePursuit::callbackFromCurrentPose, &pp);
   ros::Subscriber est_twist_subscriber =
-      nh.subscribe("current_velocity", 10, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
+      nh.subscribe("current_velocity", subscriber_queue_length, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
 
   ROS_INFO("pure pursuit start");
-  ros::Rate loop_rate(LOOP_RATE);
+  ros::Rate loop_rate(publish_frequency);
   while (ros::ok())
   {
     ros::spinOnce();

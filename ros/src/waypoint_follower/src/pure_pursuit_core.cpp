@@ -70,7 +70,7 @@ double PurePursuit::getCmdVelocity(int waypoint) const
 void PurePursuit::calcLookaheadDistance(int waypoint)
 {
   double current_velocity_mps = current_velocity_.twist.linear.x;
-  double maximum_lookahead_distance =  current_velocity_mps * 10;
+  double maximum_lookahead_distance =  current_velocity_mps * maximum_lookahead_distance_ratio_;
   double ld = current_velocity_mps * lookahead_distance_calc_ratio_;
 
   lookahead_distance_ = ld < minimum_lookahead_distance_ ? minimum_lookahead_distance_

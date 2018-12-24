@@ -32,11 +32,10 @@ that we have created in the `__init__` function.
 
 '''
 
-CONTROL_UPDATE_FREQUENCY = 50 # update frequency, 50 Hz
-
 class DBWNode(object):
     def __init__(self):
         rospy.init_node('dbw_node')
+        self.control_update_frequency = rospy.get_param('~control_update_frequency', 50)
         self.vehicle = Vehicle(
             vehicle_mass = rospy.get_param('~vehicle_mass', 1736.35),
             fuel_capacity = rospy.get_param('~fuel_capacity', 13.5),
@@ -71,7 +70,7 @@ class DBWNode(object):
         self.loop()
 
     def loop(self):
-        rate = rospy.Rate(CONTROL_UPDATE_FREQUENCY) # 50Hz
+        rate = rospy.Rate(self.control_update_frequency)
         while not rospy.is_shutdown():
             if self.enabled and not None in (self.current_velocity, self.linear_velocity, self.angular_velocity):
                 self.throttle, self.brake, self.steering = self.controller.control( self.linear_velocity,
@@ -107,12 +106,12 @@ class DBWNode(object):
     def twist_cb(self, msg):
         self.linear_velocity = abs(msg.twist.linear.x)
         self.angular_velocity = msg.twist.angular.z
-        rospy.loginfo("Twist linear v: %s, angular v: %s", self.linear_velocity, self.angular_velocity)
+#        rospy.loginfo("Twist linear v: %s, angular v: %s", self.linear_velocity, self.angular_velocity)
     
     def velocity_cb(self, msg):
         self.current_velocity = msg.twist.linear.x
         self.current_angular_velocity = msg.twist.angular.z
-        rospy.loginfo("Current v: %s, angular v: %s", self.current_velocity, self.current_angular_velocity)
+#        rospy.loginfo("Current v: %s, angular v: %s", self.current_velocity, self.current_angular_velocity)
         
 if __name__ == '__main__':
     DBWNode()

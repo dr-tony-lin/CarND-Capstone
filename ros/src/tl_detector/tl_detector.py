@@ -63,16 +63,16 @@ class TLDetector(object):
         self.waypoints = waypoints.waypoints
 
         if self.waypoints_2d is None:
-                self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in self.waypoints]
-                self.waypoints_kd = KDTree(self.waypoints_2d)
+            self.waypoints_2d = [[waypoint.pose.pose.position.x, waypoint.pose.pose.position.y] for waypoint in self.waypoints]
+            self.waypoints_kd = KDTree(self.waypoints_2d)
 
-                # List of positions that correspond to the line to stop in front of for a given intersection
-                stop_line_positions = self.config['stop_line_positions']
+            # List of positions that correspond to the line to stop in front of for a given intersection
+            stop_line_positions = self.config['stop_line_positions']
 
-                i = 0
-                for line in stop_line_positions:
-                        self.traffic_light_waypoints.append([i, self.get_closest_waypoint(line[0], line[1])])
-                        i = i + 1
+            i = 0
+            for line in stop_line_positions:
+                self.traffic_light_waypoints.append([i, self.get_closest_waypoint(line[0], line[1])])
+                i = i + 1
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
@@ -123,17 +123,17 @@ class TLDetector(object):
 
         """
         if self.waypoints is None:
-                rospy.logerr("No Waypoints provided to tl_detector.py")
-                return 0
+            rospy.logerr("No Waypoints provided to tl_detector.py")
+            return 0
         else:
-                idx = self.waypoints_kd.query([x,y], 1)[1]
-                closest_wp = np.array(self.waypoints_2d[idx])
-                prev_wp    = np.array(self.waypoints_2d[idx-1])
-                v_dir_vect = closest_wp - prev_wp
-                v_dist_vect= [x,y] - closest_wp
-                if np.dot(v_dir_vect, v_dist_vect) > 0:
-                        idx = (idx+1) % len(self.waypoints_2d)
-                return idx
+            idx = self.waypoints_kd.query([x,y], 1)[1]
+            closest_wp = np.array(self.waypoints_2d[idx])
+            prev_wp    = np.array(self.waypoints_2d[idx-1])
+            v_dir_vect = closest_wp - prev_wp
+            v_dist_vect= [x,y] - closest_wp
+            if np.dot(v_dir_vect, v_dist_vect) > 0:
+                    idx = (idx+1) % len(self.waypoints_2d)
+            return idx
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -173,13 +173,13 @@ class TLDetector(object):
             car_position = self.get_closest_waypoint(self.pose.pose.position.x, self.pose.pose.position.y)
 
         for traffic_light_wp in self.traffic_light_waypoints:
-#                rospy.loginfo("Traffic Waypoiny: %d", traffic_light_wp[1])
-#                rospy.loginfo("Car position: %d", car_position)
-                if traffic_light_wp[1] > car_position:
-                        light = True
-                        light_id = traffic_light_wp[0]
-                        light_wp = traffic_light_wp[1]
-                        break
+#           rospy.loginfo("Traffic Waypoiny: %d", traffic_light_wp[1])
+#           rospy.loginfo("Car position: %d", car_position)
+            if traffic_light_wp[1] > car_position:
+                light = True
+                light_id = traffic_light_wp[0]
+                light_wp = traffic_light_wp[1]
+                break
 
         if light:
             state = self.get_light_state(self.lights[light_id])

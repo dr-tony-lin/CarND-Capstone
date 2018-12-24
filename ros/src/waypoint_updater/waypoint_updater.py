@@ -71,7 +71,7 @@ class WaypointUpdater(object):
         v_pos = np.array(pos) - closest_pos
         if np.dot(v_way, v_pos) > 0:
             idx = self.normalize_index(idx + 1)
-        rospy.loginfo("Closest wp: %d, (%f,%f)->(%f,%f)",idx, pos[0], pos[1], self.waypoints_2d[idx][0], self.waypoints_2d[idx][1])
+#        rospy.loginfo("Closest wp: %d, (%f,%f)->(%f,%f)",idx, pos[0], pos[1], self.waypoints_2d[idx][0], self.waypoints_2d[idx][1])
         return idx
     
     def publish_waypoints(self, idx, pts):
@@ -81,7 +81,7 @@ class WaypointUpdater(object):
     def generate_lane(self, idx, pts):
         lane = Lane()
         lane.header = self.waypoints_header
-        if self.traffic_light_idx and idx + 2 < self.traffic_light_idx < idx + self.traffic_light_lookahead_wps:
+        if self.traffic_light_idx and idx < self.traffic_light_idx < idx + self.traffic_light_lookahead_wps:
             lane.waypoints = self.decelerate_waypoints(idx, pts)
         else:
             lane.waypoints = self.waypoints[idx:idx+pts]
@@ -97,7 +97,7 @@ class WaypointUpdater(object):
             v = math.sqrt(2.0 * self.max_deceleration * dist) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
-            rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_idx, dist, v)
+#            rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_idx, dist, v)
         return waypoints
         
     def pose_cb(self, msg):

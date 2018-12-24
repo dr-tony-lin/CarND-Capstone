@@ -59,10 +59,11 @@ private:
 
   // config topic
   int param_flag_;              // 0 = waypoint, 1 = Dialog
-  double const_lookahead_distance_;  // meter
   double initial_velocity_;     // km/h
+  double const_lookahead_distance_;  // meter
   double lookahead_distance_calc_ratio_;
   double minimum_lookahead_distance_;  // the next waypoint must be outside of this threshold.
+  double maximum_lookahead_distance_ratio_;
   double displacement_threshold_;
   double relative_angle_threshold_;
 
@@ -89,15 +90,13 @@ private:
   geometry_msgs::TwistStamped outputTwist(geometry_msgs::Twist t) const;
 
 public:
-  PurePursuit(bool linear_interpolate_mode)
+  PurePursuit(bool linear_interpolate_mode, double lookahead_distance_calc_ratio, double minimum_lookahead_distance,
+              double maximum_lookahead_distance_ratio, double const_lookahead_distance)
     : RADIUS_MAX_(9e10)
     , KAPPA_MIN_(1/RADIUS_MAX_)
     , linear_interpolate_(linear_interpolate_mode)
     , param_flag_(0)
-    , const_lookahead_distance_(4.0)
     , initial_velocity_(5.0)
-    , lookahead_distance_calc_ratio_(2.0)
-    , minimum_lookahead_distance_(6.0)
     , displacement_threshold_(0.2)
     , relative_angle_threshold_(5.)
     , waypoint_set_(false)
@@ -106,6 +105,10 @@ public:
     , num_of_next_waypoint_(-1)
     , lookahead_distance_(0)
   {
+    const_lookahead_distance_ = const_lookahead_distance;
+    lookahead_distance_calc_ratio_ = lookahead_distance_calc_ratio;
+    minimum_lookahead_distance_ = minimum_lookahead_distance;
+    maximum_lookahead_distance_ratio_ = maximum_lookahead_distance_ratio;
   }
   ~PurePursuit()
   {

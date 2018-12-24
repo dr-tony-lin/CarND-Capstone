@@ -39,6 +39,6 @@ class Controller(object):
             throttle = 0
             decel = max(error, self.vehicle.decel_limit)
             brake = -decel * self.vehicle.mass * self.vehicle.wheel_radius
-        rospy.loginfo("Control (%s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, throttle, steering, brake)
+#        rospy.loginfo("Control (%s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, throttle, steering, brake)
         return throttle if brake <= 1 else 0, brake, steering
 
