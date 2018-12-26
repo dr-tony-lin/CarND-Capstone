@@ -1,5 +1,8 @@
 <?xml version="1.0"?>
 <launch>
+    <!-- Log Level -->
+    <param name="loglevel" value="5" />
+    
     <!-- Simulator Bridge -->
     <include file="$(find styx)/launch/server.launch" />
 

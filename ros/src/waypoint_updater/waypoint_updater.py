@@ -60,7 +60,7 @@ class WaypointUpdater(object):
     def publish_waypoints(self, idx, pts):
         lane = self.generate_lane(idx, pts)
         if self.loglevel >= 5:
-            rospy.loginfo("Publish waypoints %s", len(lane.waypoints))
+            rospy.logdebug("Publish waypoints %s", len(lane.waypoints))
         self.final_waypoints_pub.publish(lane)
         
     def generate_lane(self, idx, pts):

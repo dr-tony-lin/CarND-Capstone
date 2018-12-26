@@ -283,7 +283,6 @@ void PurePursuit::getNextWaypoint()
     if (getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position) > lookahead_distance_)
     {
       num_of_next_waypoint_ = i;
-      if (loglevel_ >= 5) ROS_ERROR_STREAM("wp = " << i << " dist = " << getPlaneDistance(current_waypoints_.getWaypointPosition(i), current_pose_.pose.position) );
       return;
     }
   }
