@@ -18,7 +18,8 @@ STATE_COUNT_THRESHOLD = 3
 class TLDetector(object):
     def __init__(self):
         rospy.init_node('tl_detector')
-
+        
+        self.loglevel = rospy.get_param('/loglevel', 3)
         self.pose = None
         self.waypoints = None
         self.traffic_light_waypoints = []
@@ -100,11 +101,8 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-#        rospy.loginfo("Curr Light_wp: %d", light_wp)
-#        rospy.loginfo("Last Light_wp: %d", self.last_wp)
-#        rospy.loginfo("Count: %d", self.state_count)
-#        rospy.loginfo("global state: true" if self.state == True else "global state: false")
-#        rospy.loginfo("state: true" if state == True else "state: false")
+        if self.loglevel >= 4:
+            rospy.loginfo("Curr Light_wp: %d, state: %d, global state: %d, last Light_wp: %d, state count: %d", light_wp, state, self.state, self.last_wp, self.state_count)
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light

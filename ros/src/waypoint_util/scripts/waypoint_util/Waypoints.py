@@ -33,8 +33,8 @@ class Point:
         return self.waypoint.twist
 
 class Waypoints(object):
-    def __init__(self, waypoints, circular=False):
-        rospy.loginfo("Initializing waypoints ...")
+    def __init__(self, waypoints, circular=False, loglevel=3):
+        self.loglevel = loglevel
         self.circular = circular
         self.waypoints  = [Point(waypoint, 0) for waypoint in waypoints]
         self.waypoints_kd = KDTree([[waypoint.x, waypoint.y] for waypoint in self.waypoints])
@@ -42,9 +42,11 @@ class Waypoints(object):
         for i in range(1, len(waypoints)):
             self.waypoints[i].d = self.waypoints[i-1].d + dl(self.waypoints[i-1], self.waypoints[i])
         self.total_length = self.waypoints[-1].d + dl(self.waypoints[-1], self.waypoints[0])
-        rospy.loginfo("Initialized waypoints.")
-#        for i in range(0, len(self.waypoints)):
-#            rospy.loginfo("%d (%f,%f,%f,%f, %f", i, self.waypoints[i].x, self.waypoints[i].y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints[i].d)
+        if self.loglevel >= 3:
+            rospy.loginfo("Initialized waypoints.")
+        if self.loglevel >= 5:
+            for i in range(0, len(self.waypoints)):
+                rospy.logdebug("%d (%f,%f,%f,%f, %f", i, self.waypoints[i].x, self.waypoints[i].y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints[i].d)
 
     def __iter__(self):
         return iter(self.waypoints)
@@ -91,7 +93,8 @@ class Waypoints(object):
         v_pos = np.array(pos) - closest_pos
         if np.dot(v_way, v_pos) > 0:
             idx = self.normalize_index(idx + 1, True)
-#        rospy.loginfo("Closest wp: %d, (%f,%f)->(%f,%f)",idx, pos[0], pos[1], self.waypoints[idx].x, self.waypoints[idx].y)
+        if self.loglevel >= 5:
+            rospy.logdebug("Closest wp: %d, (%f,%f)->(%f,%f)",idx, pos[0], pos[1], self.waypoints[idx].x, self.waypoints[idx].y)
         return idx
 
     def before(self, wp1, wp2):

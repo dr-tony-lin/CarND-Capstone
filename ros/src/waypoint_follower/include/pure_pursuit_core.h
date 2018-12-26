@@ -66,6 +66,7 @@ private:
   double maximum_lookahead_distance_ratio_;
   double displacement_threshold_;
   double relative_angle_threshold_;
+  int loglevel_ = 3;
 
   bool waypoint_set_;
   bool pose_set_;
@@ -91,7 +92,7 @@ private:
 
 public:
   PurePursuit(bool linear_interpolate_mode, double lookahead_distance_calc_ratio, double minimum_lookahead_distance,
-              double maximum_lookahead_distance_ratio, double const_lookahead_distance)
+              double maximum_lookahead_distance_ratio, double const_lookahead_distance, int loglevel=3)
     : RADIUS_MAX_(9e10)
     , KAPPA_MIN_(1/RADIUS_MAX_)
     , linear_interpolate_(linear_interpolate_mode)
@@ -109,6 +110,7 @@ public:
     lookahead_distance_calc_ratio_ = lookahead_distance_calc_ratio;
     minimum_lookahead_distance_ = minimum_lookahead_distance;
     maximum_lookahead_distance_ratio_ = maximum_lookahead_distance_ratio;
+    loglevel_ = loglevel;
   }
   ~PurePursuit()
   {

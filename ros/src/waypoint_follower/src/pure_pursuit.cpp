@@ -38,6 +38,7 @@ int main(int argc, char **argv)
   ros::NodeHandle nh;
   ros::NodeHandle private_nh("~");
 
+  int loglevel;
   bool linear_interpolate_mode;
   int publish_frequency;
   int subscriber_queue_length;
@@ -53,17 +54,18 @@ int main(int argc, char **argv)
   private_nh.param("minimum_lookahead_distance", minimum_lookahead_distance, double(6.0));
   private_nh.param("lookahead_distance_ratio", lookahead_distance_ratio, double(4.0));
   private_nh.param("maximum_lookahead_distance_ratio", maximum_lookahead_distance_ratio, double(15));
+  private_nh.param("/loglevel", loglevel, int(3));
 
   ROS_INFO_STREAM("linear_interpolate_mode : " << linear_interpolate_mode);
   
   waypoint_follower::PurePursuit pp(linear_interpolate_mode, lookahead_distance_ratio, minimum_lookahead_distance, 
-                                    maximum_lookahead_distance_ratio, const_lookahead_distance);
+                                    maximum_lookahead_distance_ratio, const_lookahead_distance, loglevel);
 
-  ROS_INFO("set publisher...");
+  if (loglevel >= 4) ROS_INFO("set publisher...");
   // publish topic
   ros::Publisher cmd_velocity_publisher = nh.advertise<geometry_msgs::TwistStamped>("twist_cmd", 10);
 
-  ROS_INFO("set subscriber...");
+  if (loglevel >= 4) ROS_INFO("set subscriber...");
   // subscribe topic
   ros::Subscriber waypoint_subscriber =
       nh.subscribe("final_waypoints", subscriber_queue_length, &waypoint_follower::PurePursuit::callbackFromWayPoints, &pp);
@@ -72,7 +74,7 @@ int main(int argc, char **argv)
   ros::Subscriber est_twist_subscriber =
       nh.subscribe("current_velocity", subscriber_queue_length, &waypoint_follower::PurePursuit::callbackFromCurrentVelocity, &pp);
 
-  ROS_INFO("pure pursuit start");
+  if (loglevel >= 4) ROS_INFO("pure pursuit start");
   ros::Rate loop_rate(publish_frequency);
   while (ros::ok())
   {
@@ -80,6 +82,6 @@ int main(int argc, char **argv)
     cmd_velocity_publisher.publish(pp.go());
     loop_rate.sleep();
   }
-
+  if (loglevel >= 4) ROS_INFO("pure pursuit ended");
   return 0;
 }

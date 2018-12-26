@@ -8,6 +8,7 @@ ONE_MPH = 0.44704
 
 class Controller(object):
     def __init__(self, vehicle):
+        self.loglevel = rospy.get_param('/loglevel', 3)
         self.max_throttle = rospy.get_param('~max_throttle', 0.8)
         self.full_stop_brake_keep = rospy.get_param('~full_stop_brake_keep', 1200)
         self.full_stop_brake_limit = rospy.get_param('~full_stop_brake_limit', 0.1)
@@ -39,6 +40,7 @@ class Controller(object):
             throttle = 0
             decel = max(error, self.vehicle.decel_limit)
             brake = -decel * self.vehicle.mass * self.vehicle.wheel_radius
-#        rospy.loginfo("Control (%s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, throttle, steering, brake)
+        if self.loglevel >= 4:
+            rospy.loginfo("Control (%s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, throttle, steering, brake)
         return throttle if brake <= 1 else 0, brake, steering
 

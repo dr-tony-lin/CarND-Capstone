@@ -34,6 +34,7 @@ class WaypointUpdater(object):
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
+        self.loglevel = rospy.get_param('/loglevel', 3)
         self.lookahead_wps = rospy.get_param('~lookahead_wps', 40)
         self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
         self.traffic_light_stop_distance = rospy.get_param('~traffic_light_stop_distance', 15)
@@ -58,7 +59,8 @@ class WaypointUpdater(object):
     
     def publish_waypoints(self, idx, pts):
         lane = self.generate_lane(idx, pts)
-#        rospy.loginfo("Publish waypoints %s", len(lane.waypoints))
+        if self.loglevel >= 5:
+            rospy.loginfo("Publish waypoints %s", len(lane.waypoints))
         self.final_waypoints_pub.publish(lane)
         
     def generate_lane(self, idx, pts):
@@ -82,12 +84,14 @@ class WaypointUpdater(object):
             v = math.sqrt(2.0 * self.max_deceleration * dist) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
-#            rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_idx, dist, v)
+            if self.loglevel >= 5:
+                rospy.logdebug("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_idx, dist, v)
         return waypoints
         
     def pose_cb(self, msg):
         self.pose = msg.pose
-#        rospy.loginfo("Pose: (%s,%s)", self.pose.position.x, self.pose.position.y)
+        if self.loglevel >= 4:
+            rospy.loginfo("Pose: (%s,%s)", self.pose.position.x, self.pose.position.y)
 
     def waypoints_cb(self, waypoints):
         self.waypoints = Waypoints(waypoints.waypoints)
@@ -95,7 +99,8 @@ class WaypointUpdater(object):
             
     def traffic_cb(self, msg):
         self.traffic_light_idx = msg.data
-#        rospy.loginfo("Traffic light: %s", self.traffic_light_idx)
+        if self.loglevel >= 4:
+            rospy.loginfo("Traffic light: %s", self.traffic_light_idx)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
