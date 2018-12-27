@@ -42,8 +42,8 @@ class Waypoints(object):
         for i in range(1, len(waypoints)):
             self.waypoints[i].d = self.waypoints[i-1].d + dl(self.waypoints[i-1], self.waypoints[i])
         self.total_length = self.waypoints[-1].d + dl(self.waypoints[-1], self.waypoints[0])
-        if self.loglevel >= 3:
-            rospy.loginfo("Initialized waypoints.")
+        if self.loglevel >= 4:
+            rospy.loginfo("Initialized Waypoints.")
         if self.loglevel >= 5:
             for i in range(0, len(self.waypoints)):
                 rospy.logdebug("%d (%f,%f,%f,%f, %f", i, self.waypoints[i].x, self.waypoints[i].y, self.waypoints[i].twist.twist.linear.x, self.waypoints[i].twist.twist.angular.z, self.waypoints[i].d)
@@ -80,11 +80,18 @@ class Waypoints(object):
         return p
 
     def get_waypoints(self, index):
+        '''
+        Get an array of waypoints given the index
+        Parameters:
+            index the slice of waypoints to get
+        '''
         return [self._create_waypoint(wp) for wp in self.__getitem__(index)]
 
     def find_closest_waypoint(self, pos):
         '''
         Find the infex of the waypoint that is closest to pos
+        Parameters:
+            pos the position [x, y] to find
         '''
         idx = self.waypoints_kd.query(pos, 1)[1]
         closest_pos = np.array([self.waypoints[idx].x, self.waypoints[idx].y])

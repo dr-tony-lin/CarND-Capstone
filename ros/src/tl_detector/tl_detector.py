@@ -101,8 +101,8 @@ class TLDetector(object):
         else:
             self.upcoming_red_light_pub.publish(Int32(self.last_wp))
         self.state_count += 1
-        if self.loglevel >= 4:
-            rospy.loginfo("Curr Light_wp: %d, state: %d, global state: %d, last Light_wp: %d, state count: %d", light_wp, state, self.state, self.last_wp, self.state_count)
+        if self.loglevel >= 5:
+            rospy.logdebug("Curr Light_wp: %d, state: %d, global state: %d, last Light_wp: %d, state count: %d", light_wp, state, self.state, self.last_wp, self.state_count)
 
     def get_light_state(self, light):
         """Determines the current color of the traffic light
@@ -116,7 +116,7 @@ class TLDetector(object):
         """
         Is_Site = self.config['is_site']
         if Is_Site == True:
-        	if(not self.has_image):
+        	if (not self.has_image):
 	            self.prev_light_loc = None
 	            return False
 
@@ -124,8 +124,8 @@ class TLDetector(object):
 
 	        #Get classification
         	return self.light_classifier.get_classification(cv_image)
-  	else:
-		return light.state
+        else:
+            return light.state
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
@@ -150,7 +150,7 @@ class TLDetector(object):
                 light_wp = traffic_light_wp[1]
                 break
 
-        if light:
+        if light and light_wp - car_position < 40:
             state = self.get_light_state(self.lights[light_id])
             return light_wp, state
 
