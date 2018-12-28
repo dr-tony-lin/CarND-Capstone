@@ -31,7 +31,7 @@ Then the images and labels were combined into [TFRecord](https://github.com/dr-t
 
 ### Creat Training Pipeline  
 
-The training pipeline includes model configuration, training and evaluation configurations. It takes the paths to model.ckpt, TFRecord and pbtxt file. This pipeline configuration will be loaded in the train.py or model_main.py.  
+The [training pipeline](https://github.com/dr-tony-lin/CarND-Capstone/blob/master/training%20documentation/Training%20data/Sample%20TFRecord/ssd_mobilenet_v1_coco_2.config) includes model configuration, training and evaluation configurations. It takes the paths to model.ckpt, TFRecord and pbtxt file. This pipeline configuration will be loaded in the train.py or model_main.py.  
 
 ### Download Model  
 
