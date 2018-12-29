@@ -7,14 +7,13 @@ import rospy
 
 
 class TLClassifier(object):
-    def __init__(self, is_site=False):
-        
+    def __init__(self, loglevel=3):
         # Minimum score for classifier to consider a positive result
         self.min_score = rospy.get_param('~min_positive_score', 0.5)
         # Class of detected light - start with UNKNOWN
         self.light = TrafficLight.UNKNOWN
         # Define whether or not this is running in a simulation
-        self.is_site = is_site
+        self.loglevel = loglevel
 
         # Select model according to sim value
         # ****************************************************************************
@@ -39,6 +38,9 @@ class TLClassifier(object):
                 data = f.read()
                 graph_def.ParseFromString(data)
             tf.import_graph_def(graph_def, name='')
+            
+            if self.loglevel >= 4:
+                rospy.loginfo("Loaded trained model from %s", self.model_path)
 
             # Get handles to input and output tensors
             ops = tf.get_default_graph().get_operations()
