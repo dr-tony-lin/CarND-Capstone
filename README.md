@@ -63,26 +63,26 @@ roslaunch launch/styx.launch
 4. Run the simulator
 
 ### Diagnosis
-0. Make sure that the python dependencies installed before using the diagnosis tool
+1. Make sure that the python dependencies installed before using the diagnosis tool
 ```
 pip install -r requirements_debug.txt
 ```
 
-1. Open a new terminal and source
+2. Open a new terminal and source
 ```bash
 cd ~/CarND-Capstone
 cd ros
 source devel/setup.bash
 ```
 
-2. Make the diagnosis python file executable
+3. Make the diagnosis python file executable
 ```bash
 cd src/tools
 chmod +x diagScreen.py
 cd ~/CarND-Capstone/ros
 ```
 
-3. Run the diagnosis file
+4. Run the diagnosis file
 ```bash
 rosrun tools diagScreen.py --screensize 5 --maxhistory 800 --textspacing 75 --fontsize 1.5
 ```

@@ -15,6 +15,9 @@
     <!--Waypoint Updater Node -->
     <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
 
+    <!--Traffic Light classifier model -->
+    <param name="traffic_light_classifier_model" binfile="$(find tl_detector)/light_classification/frozen_inference_graph.pb" />>
+    
     <!--Traffic Light Locations and Camera Config -->
     <param name="traffic_light_config" textfile="$(find tl_detector)/site_traffic_light_config.yaml" />
 

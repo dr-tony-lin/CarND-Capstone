@@ -7,23 +7,20 @@ import rospy
 
 
 class TLClassifier(object):
-    def __init__(self, is_sight=False):
+    def __init__(self, is_site=False):
         
         # Minimum score for classifier to consider a positive result
-        self.min_score = 0.50
+        self.min_score = rospy.get_param('~min_positive_score', 0.5)
         # Class of detected light - start with UNKNOWN
         self.light = TrafficLight.UNKNOWN
         # Define whether or not this is running in a simulation
-        self.is_sight = is_sight
+        self.is_site = is_site
 
         # Select model according to sim value
         # ****************************************************************************
         # Please put the .pb files in the same directory as this tl_classifier.py file
         # ****************************************************************************
-        if self.is_sight:
-            self.model = 'resnet-udacity-real-large-17675'
-        else:
-            self.model = 'frozen_inference_graph_resnet.pb'
+        self.model_path = rospy.get_param('/traffic_light_classifier_model', 'frozen_inference_graph.pb')
 
         # Load label values
         #label_file = 'label_map.pbtxt'
@@ -31,18 +28,14 @@ class TLClassifier(object):
         #self.category_index = label_map_util.create_category_index_from_labelmap(label_file)
 
         # Load graph from frozen model
-        # graph_file = 'frozen_inference_graph.pb'
-        graph_file_path = os.path.join('light_classification', self.model)
-
         self.graph = tf.Graph()
         config = tf.ConfigProto()
         config.gpu_options.allow_growth = True	# Prevents crashing when avail. GPU memory < max GPU memory
 
         with self.graph.as_default():
-
             # Load graph from file
             graph_def = tf.GraphDef()
-            with tf.gfile.Open(graph_file_path, 'rb') as f:
+            with tf.gfile.Open(self.model_path, 'rb') as f:
                 data = f.read()
                 graph_def.ParseFromString(data)
             tf.import_graph_def(graph_def, name='')
