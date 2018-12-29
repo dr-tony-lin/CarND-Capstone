@@ -47,6 +47,12 @@ git clone https://github.com/udacity/CarND-Capstone.git
 cd CarND-Capstone
 pip install -r requirements.txt
 ```
+If you want to use the diagnosis tool, please install python dependencies as
+```bash
+cd CarND-Capstone
+pip install -r requirements_debug.txt
+```
+
 3. Make and run styx
 ```bash
 cd ros
@@ -57,6 +63,11 @@ roslaunch launch/styx.launch
 4. Run the simulator
 
 ### Diagnosis
+0. Make sure that the python dependencies installed before using the diagnosis tool
+```
+pip install -r requirements_debug.txt
+```
+
 1. Open a new terminal and source
 ```bash
 cd ~/CarND-Capstone
