@@ -56,6 +56,29 @@ roslaunch launch/styx.launch
 ```
 4. Run the simulator
 
+### Diagnosis
+1. Open a new terminal and source
+```bash
+cd ~/CarND-Capstone
+cd ros
+source devel/setup.bash
+```
+
+2. Make the diagnosis python file executable
+```bash
+cd src/tools
+chmod +x diagScreen.py
+cd ~/CarND-Capstone/ros
+```
+
+3. Run the diagnosis file
+```bash
+rosrun tools diagScreen.py --screensize 5 --maxhistory 800 --textspacing 75 --fontsize 1.5
+```
+Note that there are five options to choose the screensize:  
+help='Screen sizes: 1:2500x2500px, 2:1250x1250px, 3:833x833px, 4:625x625px, 5:500x500px '   
+You can choose anyone that you like.
+
 ### Real world testing
 1. Download [training bag](https://s3-us-west-1.amazonaws.com/udacity-selfdrivingcar/traffic_light_bag_file.zip) that was recorded on the Udacity self-driving car.
 2. Unzip the file
