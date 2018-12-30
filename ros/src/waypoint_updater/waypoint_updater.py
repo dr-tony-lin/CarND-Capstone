@@ -38,7 +38,7 @@ class WaypointUpdater(object):
         self.loglevel = rospy.get_param('/loglevel', 3)
         self.lookahead_wps = rospy.get_param('~lookahead_wps', 40)
         self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
-        self.traffic_light_decelerate_distance = rospy.get_param('~traffic_light_decelerate_distance', 30)
+        self.yellow_light_full_speed_distance = rospy.get_param('~yellow_light_full_speed_distance', 30)
         self.traffic_light_full_stop_distance = rospy.get_param('~traffic_light_stop_distance', 5)
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
         self.yellow_light_decel_ratio = rospy.get_param('~yellow_light_decel_ratio', 0.6)
@@ -62,8 +62,6 @@ class WaypointUpdater(object):
     
     def publish_waypoints(self, idx, pts):
         lane = self.generate_lane(idx, pts)
-        if self.loglevel >= 4:
-            rospy.loginfo("Publish waypoints %s", len(lane.waypoints))
         self.final_waypoints_pub.publish(lane)
         
     def generate_lane(self, idx, pts):
@@ -77,6 +75,9 @@ class WaypointUpdater(object):
             lane.waypoints = self.decelerate_waypoints(idx, pts)
         else:
             lane.waypoints = self.waypoints.get_waypoints(slice(idx, idx+pts))
+            if self.loglevel >= 4:
+                rospy.loginfo("Waypoint %s: velocity: %f", idx, lane.waypoints[0].twist.twist.linear.x)
+                rospy.loginfo("Waypoint %s: velocity: %f", idx + pts - 1, lane.waypoints[pts - 1].twist.twist.linear.x)
         return lane
     
     def decelerate_waypoints(self, idx, pts):
@@ -85,18 +86,17 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
-            dist = max(0, (self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)) / self.traffic_light_decelerate_distance
+            dist = max(0, self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)
             if self.traffic_light_status.state == TrafficLight.RED:
-                v = math.sqrt(wp.twist.twist.linear.x * dist) if dist > 0.1 else 0
-            else: # Yellow
-                if dist < 0.4: # distance to light is too short, keep going
-                    v = wp.twist.twist.linear.x
-                else:
-                    v = math.sqrt(wp.twist.twist.linear.x * dist / self.yellow_light_decel_ratio) if dist > 0.1 else 0
+                v = math.sqrt(2.0 * self.max_deceleration * dist) if dist > 0 else 0
+            elif dist < self.yellow_light_full_speed_distance: # yellow light, if distance to light is too short, we will keep going
+                v = math.sqrt(2.0 * self.max_deceleration * self.yellow_light_decel_ratio * dist) if dist > 0 else 0
+            else:
+                v = wp.twist.twist.linear.x
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
-            if self.loglevel >= 5:
-                rospy.logdebug("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_status.tlwpidx, dist, v)
+            if self.loglevel >= 4 and (i == idx or i == idx + pts):
+                rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_status.tlwpidx, self.waypoints.distance(i, self.traffic_light_status.tlwpidx), v)
         return waypoints
         
     def pose_cb(self, msg):
@@ -105,9 +105,9 @@ class WaypointUpdater(object):
             rospy.loginfo("Pose: (%s,%s)", self.pose.position.x, self.pose.position.y)
 
     def velocity_cb(self, velocity):
-        self.velocity = velocity
+        self.velocity = velocity.twist.linear.x
         if self.loglevel >= 4:
-            rospy.loginfo("Velocity: %f", self.velocity.twist.linear.x)
+            rospy.loginfo("Velocity: %f", self.velocity)
         
     def waypoints_cb(self, waypoints):
         self.waypoints = Waypoints(waypoints.waypoints)

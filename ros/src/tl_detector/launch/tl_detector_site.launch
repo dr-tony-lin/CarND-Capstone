@@ -4,7 +4,7 @@
         <param name="min_positive_score" value="0.25" />
         <param name="state_count_threshold" value="3" />
         <param name="traffic_light_over_waypoints" value="5" />
-        <param name="traffic_light_detection_interval" value="0.1" />
+        <param name="traffic_light_detection_interval" value="0.05" />
     </node>
     <node pkg="tl_detector" type="light_publisher.py" name="light_publisher" output="screen" cwd="node"/>
 </launch>

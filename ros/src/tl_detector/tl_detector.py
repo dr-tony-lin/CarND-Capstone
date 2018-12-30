@@ -146,7 +146,7 @@ class TLDetector(object):
 	        #Get classification
         	return self.light_classifier.get_classification(cv_image)
         else:
-            return light.state, None, None
+            return light.state, 1, None
 
     def process_traffic_lights(self):
         """Finds closest visible traffic light, if one exists, and determines its
