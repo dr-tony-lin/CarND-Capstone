@@ -8,8 +8,8 @@
 
 |        Name         |            Email             |
 |---------------------|:-----------------------------|
-|     James Korge	  |       jkorge@nyu.edu         |
-|     Yulong Li	      |      hiyulongl@gmail.com	 |	
+|     James Korge	  |       jk5128@nyu.edu         |
+|     Yulong Li	      |      hiyulongl@gmail.com	 |
 |    Islam Sherif     |   eng.islam.sherif@gmail.com |
 |   Fuqiang Huang	  |       fuqiang@wustl.edu      |
 |     Tony Lin        |     dr.tony.lin@gmail.com	 |
@@ -97,4 +97,3 @@ commit dc78c085 for Tensorflow 1.3 compatibility.
 ### For the Site
 
 The traffic light detection and classification uses a SSD Inception V2 pre-trained model from https://github.com/alex-lechner/Traffic-Light-Classification. It is based on commit f7e99c0 of https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md for Tensowflow 1.4 compatibility. It also works for Tendowflow 1.3.
-
