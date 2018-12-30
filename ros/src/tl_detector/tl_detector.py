@@ -45,7 +45,7 @@ class TLDetector(object):
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
         self.traffic_light_over_waypoints = rospy.get_param('traffic_light_over_waypoints', 5)
         self.traffic_light_detection_interval = rospy.get_param('~traffic_light_detection_interval', 0.05)
-        
+
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', TrafficLightStatus, queue_size=1)
@@ -90,7 +90,7 @@ class TLDetector(object):
         """
         if self.waypoints is None:
             return
-        if time.time() - self.last_detection_time < 0.2:
+        if time.time() - self.last_detection_time < self.traffic_light_detection_interval:
             return
         self.last_detection_time = time.time()
         if self.loglevel >= 4:
@@ -138,12 +138,11 @@ class TLDetector(object):
             int: ID of traffic light color (specified in styx_msgs/TrafficLight)
 
         """
-        Is_Site = True #self.config['is_site']
+        Is_Site = self.config['is_site']
         if Is_Site == True:
         	if (not self.has_image):
-	            self.prev_light_loc = None
 	            return False
-	        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+	        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 	        #Get classification
         	return self.light_classifier.get_classification(cv_image)
         else:
