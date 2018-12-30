@@ -6,7 +6,7 @@ import cv2
 import yaml
 from std_msgs.msg import Int32
 from geometry_msgs.msg import PoseStamped, Pose
-from styx_msgs.msg import TrafficLightArray, TrafficLight
+from styx_msgs.msg import TrafficLightArray, TrafficLight, TrafficLightStatus
 from styx_msgs.msg import Lane
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -43,6 +43,7 @@ class TLDetector(object):
         self.config = yaml.load(config_string)
 
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', Int32, queue_size=1)
+        self.traffic_light_state = rospy.Publisher('/traffic_light_status', TrafficLightStatus, queue_size=1)
 
         self.bridge = CvBridge()
         self.light_classifier = TLClassifier()
@@ -50,6 +51,7 @@ class TLDetector(object):
 
         self.state = TrafficLight.UNKNOWN
         self.last_state = TrafficLight.UNKNOWN
+        self.use_classfier_in_sim = True
         self.last_wp = -1
         self.state_count = 0
 
@@ -95,7 +97,11 @@ class TLDetector(object):
             self.state = state
         elif self.state_count >= STATE_COUNT_THRESHOLD:
             self.last_state = self.state
-            light_wp = light_wp if state == TrafficLight.RED else -1
+
+            if (state == TrafficLight.RED) or (state == TrafficLight.YELLOW):
+                light_wp = light_wp 
+            else:
+                light_wp = -1
             self.last_wp = light_wp
             self.upcoming_red_light_pub.publish(Int32(light_wp))
         else:
@@ -115,15 +121,15 @@ class TLDetector(object):
 
         """
         Is_Site = self.config['is_site']
-        if Is_Site == True:
-        	if (not self.has_image):
-	            self.prev_light_loc = None
-	            return False
+        if (Is_Site == True) or (self.use_classfier_in_sim == True):
+            if (not self.has_image):
+                self.prev_light_loc = None
+                return False
 
-	        cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "bgr8")
+            cv_image = self.bridge.imgmsg_to_cv2(self.camera_image, "rgb8")
 
-	        #Get classification
-        	return self.light_classifier.get_classification(cv_image)
+            #Get classification
+            return self.light_classifier.get_classification(cv_image)[0]
         else:
             return light.state
 
@@ -150,8 +156,14 @@ class TLDetector(object):
                 light_wp = traffic_light_wp[1]
                 break
 
+        state = self.get_light_state(self.lights[light_id])
+        
+        traffic_lighy_status = TrafficLightStatus()
+        traffic_lighy_status.tlwpidx = light_wp
+        traffic_lighy_status.state = state
+        self.traffic_light_state.publish(traffic_lighy_status)
+
         if light and light_wp - car_position < 40:
-            state = self.get_light_state(self.lights[light_id])
             return light_wp, state
 
         return -1, TrafficLight.UNKNOWN

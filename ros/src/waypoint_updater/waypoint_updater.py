@@ -7,6 +7,7 @@ from geometry_msgs.msg import PoseStamped
 from styx_msgs.msg import Lane, Waypoint
 from std_msgs.msg import Int32
 from waypoint_util import Waypoints
+from styx_msgs.msg import TrafficLightStatus
 
 '''
 This node will publish waypoints from the car's current position to some `x` distance ahead.
@@ -31,6 +32,7 @@ class WaypointUpdater(object):
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', Int32, self.traffic_cb)
         #rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
+        rospy.Subscriber('/traffic_light_status', TrafficLightStatus, self.tl_stat_cb)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -101,6 +103,10 @@ class WaypointUpdater(object):
         self.traffic_light_idx = msg.data
         if self.loglevel >= 4:
             rospy.loginfo("Traffic light: %s", self.traffic_light_idx)
+
+    def tl_stat_cb(self, msg):
+        if self.loglevel >= 4:
+            rospy.loginfo("Tl_State: (%s,%s)", msg.tlwpidx, msg.state)
 
     def obstacle_cb(self, msg):
         # TODO: Callback for /obstacle_waypoint message. We will implement it later
