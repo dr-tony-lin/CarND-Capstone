@@ -3,8 +3,9 @@
     <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" >
         <param name="lookahead_wps" value="20" />
         <param name="waypoint_update_frequency" value="50" />
-        <param name="traffic_light_stop_distance" value="11." />
-        <param name="traffic_light_lookahead_wps" value="40" />
-        <param name="max_deceleration" value="8.5" /> <!-- 8.5m/s^2 is the general limit-->
+        <param name="traffic_light_decelerate_distance" value="30." />
+        <param name="traffic_light_full_stop_distance" value="20." />
+        <param name="yellow_light_decel_ratio" value="0.6" />
+        <param name="max_deceleration" value="5.0" /> <!-- 8.5m/s^2 is the general limit, 60% of it-->
     </node>
 </launch>
