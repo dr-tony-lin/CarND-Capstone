@@ -1,11 +1,13 @@
 <?xml version="1.0"?>
 <launch>
     <!-- Log Level -->
-    <param name="loglevel" value="3" />
+    <param name="loglevel" value="5" />
     
-	<!-- the number of waypoint to start processing the traffic lights -->
-    <param name="traffic_light_lookahead_wps" value="50" />
+    <param name="velocity_limit" value="50" /> <!-- the velocity limit of the road -->
 
+	<!-- the number of waypoint to start processing the traffic lights -->
+    <param name="traffic_light_lookahead_wps" value="60" />
+    
     <!-- Vehicle parameters -->
     <param name="vehicle_mass" value="1080." />
     <param name="fuel_capacity" value="0." />
@@ -16,7 +18,7 @@
     <param name="wheel_base" value="3" />
     <param name="steer_ratio" value="14.8" />
     <param name="max_lat_accel" value="3." />
-    <param name="max_throttle" value="0.8" />
+    <param name="max_throttle" value="0.5" />
     <param name="max_steer_angle" value="8." />
 
     <!-- Simulator Bridge -->

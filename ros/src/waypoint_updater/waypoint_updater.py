@@ -36,21 +36,27 @@ class WaypointUpdater(object):
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
         self.yellow_light_decel_ratio = rospy.get_param('~yellow_light_decel_ratio', 0.6)
         self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5)
-        self.acceleration_distance = rospy.get_param('~acceleration_distance', 15)
-        self.max_deceleration = -rospy.get_param('/decel_limit', -8.5) * 0.55
-        self.max_acceleration = -rospy.get_param('/accel_limit', 2.0)
+        self.acceleration_distance = rospy.get_param('~acceleration_distance', 20)
+        self.traffic_light_over_distance = rospy.get_param('~traffic_light_over_distance', 2.0)
+        self.min_traffic_light_stop_seconds = rospy.get_param('~min_traffic_light_stop_seconds', 3.0)
+        self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
+        self.max_acceleration = -rospy.get_param('/accel_limit', 2.5)
 
         rospy.loginfo("Log level: %d, max deceleration: %f", self.loglevel, self.max_deceleration)
+        self.velocity_in = None
         self.pose = None
-        self.last_pose_time = None
+        self.pose_time = None
         self.velocity = None
+        self.velocity_time = None
         self.waypoints_header = None
         self.traffic_light_status = None
         self.waypoints = None
-        self.last_stop_wp = None
+        self.start_accel_wp = None
         self.last_lane = None
-        self.last_wp = None
-        self.start_decel_wp = None
+        self.pose_wpidx = None
+        self.can_stop = True
+        self.stop_dist = None
+        self.start_decel_wpidx = None
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
@@ -66,17 +72,21 @@ class WaypointUpdater(object):
         rate = rospy.Rate(self.waypoint_update_frequency)
         while not rospy.is_shutdown():
             if self.pose and self.waypoints:
-                self.last_wp = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
-                if self.velocity is not None and self.last_pose_time is not None :
-                    dt = time.time() - self.last_pose_time + 0.1 # assume 0.l second latency
-                    if dt > 2.0 / self.waypoint_update_frequency:
-                        last = self.last_wp
+                self.pose_wpidx = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
+                # Try to estimate new pose if we missd few pose updates
+                if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
+                    dt = time.time() - self.pose_time + 0.1 # assume 0.l second latency
+                    if dt > 3.0 / self.waypoint_update_frequency:
+                        dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
+                        dt2 = time.time() - self.velocity_time
+                        self.velocity = self.velocity_in + dv * dt2 * 0.6 # estimate the speed
+                        last = self.pose_wpidx
                         # Estimate the distance that the vehicle has moved
                         d = (self.velocity * 0.3 + self.last_lane.waypoints[-1].twist.twist.linear.x * 0.7) * dt if self.last_lane else self.velocity * dt
-                        self.last_wp += int(d / self.waypoints.average_waypoint_length + 0.5) # try to catch up the pose, round to the next integer
+                        self.pose_wpidx += int(d / self.waypoints.average_waypoint_length + 0.5) # try to catch up the pose, round to the next integer
                         if self.loglevel >= 4:
-                            rospy.loginfo("Catch pose %d -> %d, dist: %f", last, self.last_wp, d)
-                self.publish_waypoints(self.last_wp, self.lookahead_wps)
+                            rospy.loginfo("Catch pose %d -> %d, dist: %f, v: %f", last, self.pose_wpidx, d, self.velocity)
+                self.publish_waypoints(self.pose_wpidx, self.lookahead_wps)
             rate.sleep()
     
     def publish_waypoints(self, idx, pts):
@@ -92,65 +102,72 @@ class WaypointUpdater(object):
                 and self.waypoints.before(idx, self.traffic_light_status.tlwpidx) \
                 and self.waypoints.before(self.traffic_light_status.tlwpidx, lookahead):
             lane.waypoints = self.decelerate_waypoints(idx, pts)
-        elif self.last_stop_wp and self.waypoints.distance(self.last_stop_wp, idx) <= self.acceleration_distance:
+        elif self.start_accel_wp and self.waypoints.distance(self.start_accel_wp, idx) <= self.acceleration_distance:
             lane.waypoints = self.accelerate_waypoints(idx, pts)
             return lane
         else:
-            self.start_decel_wp = None
+            self.start_decel_wpidx = None
             lane.waypoints = self.waypoints.get_waypoints(slice(idx, idx+pts))
             if self.loglevel >= 4:
                 rospy.loginfo("Waypoint update %s: velocity: %f", idx, lane.waypoints[0].twist.twist.linear.x)
                 rospy.loginfo("       Waypoint %s: velocity: %f", idx + pts - 1, lane.waypoints[-1].twist.twist.linear.x)
         if self.velocity < 0.1:
-            self.last_stop_wp = self.last_wp
+            self.start_accel_wp = self.pose_wpidx
         return lane
     
     def decelerate_waypoints(self, idx, pts):
         waypoints = []
-        if self.start_decel_wp is None:
-            self.start_decel_wp = idx
-        stop_dist = self.waypoints.distance(self.start_decel_wp, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance
+        if self.start_decel_wpidx is None:
+            self.start_decel_wpidx = idx
+            dist = self.waypoints.distance(self.start_decel_wpidx, self.traffic_light_status.tlwpidx)
+            self.stop_dist = dist - self.traffic_light_full_stop_distance
+            # Can we stop the vehicle?
+            t = self.velocity / self.max_deceleration
+            min_dist = self.velocity*t - 0.5*self.max_deceleration*(t**2)
+            self.can_stop = self.velocity < 1 or (dist >= 0 and min_dist <= dist)
+            if not self.can_stop: # we can not stop accelerate to pass
+                self.start_accel_wp = idx
+                if self.loglevel >= 4:
+                    rospy.loginfo("Cannot decelerate: %s -> %s, start %d, distance: %f, velocity: %f, required dist: %f, t: %f", idx, self.traffic_light_status.tlwpidx, self.start_decel_wpidx, dist, self.velocity, min_dist, t)
+        if not self.can_stop: # we can not stop accelerate to pass
+            self.start_decel_wpidx = None
+            return self.accelerate_waypoints(idx, pts)
         for i in range(idx, idx + pts + 1):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
             dist = max(0.0, self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)
-            if self.traffic_light_status.state == TrafficLight.RED: # red light, stop
-                v = max(self.velocity, self.max_deceleration) * dist / stop_dist if dist > 0 else 0
-            elif dist > self.yellow_light_full_speed_distance: # yellow light, enough distance to stop
-                v = max(self.velocity, self.max_deceleration) * self.yellow_light_decel_ratio * dist / stop_dist if dist > 0 else 0
-            else: # distance to light is too short, we will keep going
-                v = wp.twist.twist.linear.x
+            v = max(self.velocity - self.max_deceleration, self.max_deceleration) * ((dist / self.stop_dist) ** 2) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
-                rospy.loginfo("Decelerate: %s -> %s, distance: %f, velocity: %f", i, self.traffic_light_status.tlwpidx, dist, v)
+                rospy.loginfo("Decelerate: %s -> %s, start %d, distance: %f, velocity: %f->%f", i, self.traffic_light_status.tlwpidx, self.start_decel_wpidx, dist, v, p.twist.twist.linear.x)
         return waypoints
 
     def accelerate_waypoints(self, idx, pts):
         waypoints = []
-        self.start_decel_wp = None
         for i in range(idx, idx + pts + 1):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
-            dist = max(0.0, min(self.acceleration_distance, self.waypoints.distance(self.last_stop_wp, i)))
-            v = wp.twist.twist.linear.x * dist / self.acceleration_distance
-            v = v if v > self.acceleration_start_velocity else max(self.velocity, self.acceleration_start_velocity)
+            dist = max(0.0, min(self.acceleration_distance, self.waypoints.distance(self.start_accel_wp, i)))
+            dv = wp.twist.twist.linear.x - self.velocity
+            v = max(self.acceleration_start_velocity, self.velocity + dv * dist / self.acceleration_distance)
             p.twist.twist.linear.x = min(v, wp.twist.twist.linear.x)
             waypoints.append(p)
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
-                rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", i, self.last_stop_wp, self.waypoints.distance(self.last_stop_wp, i), v)
+                rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", self.start_accel_wp, i, self.waypoints.distance(self.start_accel_wp, i), v)
         return waypoints
         
     def pose_cb(self, msg):
+        self.pose_time = time.time()
         self.pose = msg.pose
-        self.last_pose_time = time.time()
         if self.loglevel >= 4:
             rospy.loginfo("Pose: (%s,%s)", self.pose.position.x, self.pose.position.y)
 
     def velocity_cb(self, velocity):
-        self.velocity = velocity.twist.linear.x
+        self.velocity_time = time.time()
+        self.velocity = self.velocity_in = velocity.twist.linear.x
         if self.loglevel >= 4:
             rospy.loginfo("Velocity: %f", self.velocity)
         

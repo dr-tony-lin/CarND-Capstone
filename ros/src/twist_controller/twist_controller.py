@@ -17,7 +17,7 @@ class Controller(object):
         self.vehicle = vehicle
         self.yaw_controller = YawController(vehicle, 0.1)
         self.throttle_controller = PID(0.1, 0.05, 1.2, 0, self.max_throttle)
-        self.velocity_filter = LowPassFilter(0.5, 0.02)
+        self.velocity_filter = LowPassFilter(0.2, 0.2)
         self.last_time = rospy.get_time()
 
     def reset(self):

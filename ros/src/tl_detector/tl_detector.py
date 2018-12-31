@@ -16,20 +16,6 @@ from waypoint_util import Waypoints
 
 class TLDetector(object):
     def __init__(self):
-        rospy.init_node('tl_detector')
-        
-        self.loglevel = rospy.get_param('/loglevel', 3)
-        self.state_count_threshold = rospy.get_param('~state_count_threshold', 3)
-        self.pose = None
-        self.car_wpidx = None
-        self.waypoints = None
-        self.traffic_light_waypoints = []
-        self.camera_image = None
-        self.lights = []
-
-        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-
         '''
         /vehicle/traffic_lights provides you with the location of the traffic light in 3D map space and
         helps you acquire an accurate ground truth data source for the traffic light
@@ -39,9 +25,22 @@ class TLDetector(object):
         '''
         config_string = rospy.get_param("/traffic_light_config")
         
+        rospy.init_node('tl_detector')
+        
+        self.loglevel = rospy.get_param('/loglevel', 3)
+        self.state_count_threshold = rospy.get_param('~state_count_threshold', 3)
+        
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
         self.traffic_light_over_waypoints = rospy.get_param('traffic_light_over_waypoints', 10)
         self.traffic_light_detection_interval = rospy.get_param('~traffic_light_detection_interval', 0.05)
+        self.traffic_light_off_idle_interval = rospy.get_param('~traffic_light_off_idle_interval', 3.0)
+
+        self.pose = None
+        self.car_wpidx = None
+        self.waypoints = None
+        self.traffic_light_waypoints = []
+        self.camera_image = None
+        self.lights = []
 
         self.config = yaml.load(config_string)
 
@@ -55,7 +54,10 @@ class TLDetector(object):
         self.last_msg = None
         self.state_count = 0
         self.last_detection_time = -1
+        self.last_tl_off_time = -1
 
+        sub1 = rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        sub2 = rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
 
@@ -90,8 +92,13 @@ class TLDetector(object):
         """
         if self.waypoints is None:
             return
-        if time.time() - self.last_detection_time < self.traffic_light_detection_interval:
+        if self.state_count <= 0 and time.time() - self.last_detection_time < self.traffic_light_detection_interval:
             return
+        if time.time() - self.last_tl_off_time < self.traffic_light_off_idle_interval:
+            if self.loglevel >= 4:
+                rospy.loginfo("No detection %f %f %f", time.time(), self.last_tl_off_time, self.traffic_light_off_idle_interval)
+            return
+
         self.last_detection_time = time.time()
         self.has_image = True
         self.camera_image = msg
@@ -107,6 +114,8 @@ class TLDetector(object):
             self.state_count = 0
             self.state = state
         elif self.state_count >= self.state_count_threshold:
+            if state == TrafficLight.GREEN and self.last_state == TrafficLight.RED:
+                self.last_tl_off_time = time.time()
             self.last_state = self.state
             self.last_wp = light_wp
             self.last_msg = state_msg = TrafficLightStatus()

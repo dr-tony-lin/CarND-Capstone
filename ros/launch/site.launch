@@ -2,7 +2,9 @@
 <launch>
     <!-- Log Level -->
     <param name="loglevel" value="3" />
-    
+
+    <param name="velocity_limit" value="30" /> <!-- the velocity limit of the road -->
+
 	<!-- the number of waypoint to start processing the traffic lights -->
     <param name="traffic_light_lookahead_wps" value="50" />
     
@@ -10,8 +12,8 @@
     <param name="vehicle_mass" value="1736.35" />
     <param name="fuel_capacity" value="13.5" />
     <param name="brake_deadband" value=".1" />
-    <param name="decel_limit" value="-8.5" /> <!-- 8.5m/s^2 is the general limit-->
-    <param name="accel_limit" value="2.5" /> <!-- 2.5m/s^2 for general vehicle, racing vehicle can reach 3.8m/s^2 or above -->
+    <param name="decel_limit" value="-8.5" /> <!-- 8.5m/s^2 is the general limit -->
+    <param name="accel_limit" value="2.5" /> <!-- 2.5m/s^2 for general vehicle (racing vehicle can reach 3.8m/s^2 or above) -->
     <param name="wheel_radius" value="0.2413" />
     <param name="wheel_base" value="2.8498" />
     <param name="steer_ratio" value="14.8" />
