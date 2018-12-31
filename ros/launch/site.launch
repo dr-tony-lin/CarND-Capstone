@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <launch>
     <!-- Log Level -->
-    <param name="loglevel" value="5" />
+    <param name="loglevel" value="3" />
     
 	<!-- the number of waypoint to start processing the traffic lights -->
-    <param name="traffic_light_lookahead_wps" value="40" />
+    <param name="traffic_light_lookahead_wps" value="50" />
     
     <!-- Vehicle parameters -->
     <param name="vehicle_mass" value="1736.35" />
