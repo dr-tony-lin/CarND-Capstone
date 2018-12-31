@@ -52,11 +52,11 @@ class WaypointUpdater(object):
         self.last_wp = None
         self.start_decel_wp = None
 
-        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb)
-        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb)
+        rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
+        rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
-        rospy.Subscriber('/traffic_waypoint', TrafficLightStatus, self.traffic_cb)
-        rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb)
+        rospy.Subscriber('/traffic_waypoint', TrafficLightStatus, self.traffic_cb, queue_size=1)
+        rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -67,13 +67,13 @@ class WaypointUpdater(object):
         while not rospy.is_shutdown():
             if self.pose and self.waypoints:
                 self.last_wp = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
-                if self.velocity and self.last_pose_time:
+                if self.velocity is not None and self.last_pose_time is not None :
                     dt = time.time() - self.last_pose_time + 0.1 # assume 0.l second latency
                     if dt > 2.0 / self.waypoint_update_frequency:
                         last = self.last_wp
                         # Estimate the distance that the vehicle has moved
                         d = (self.velocity * 0.3 + self.last_lane.waypoints[-1].twist.twist.linear.x * 0.7) * dt if self.last_lane else self.velocity * dt
-                        self.last_wp += int(d + 0.5) # try to catch up the pose, round to the next integer
+                        self.last_wp += int(d / self.waypoints.average_waypoint_length + 0.5) # try to catch up the pose, round to the next integer
                         if self.loglevel >= 4:
                             rospy.loginfo("Catch pose %d -> %d, dist: %f", last, self.last_wp, d)
                 self.publish_waypoints(self.last_wp, self.lookahead_wps)
@@ -124,7 +124,7 @@ class WaypointUpdater(object):
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
-                rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.traffic_light_status.tlwpidx, dist, v)
+                rospy.loginfo("Decelerate: %s -> %s, distance: %f, velocity: %f", i, self.traffic_light_status.tlwpidx, dist, v)
         return waypoints
 
     def accelerate_waypoints(self, idx, pts):
@@ -135,12 +135,12 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
             dist = max(0.0, min(self.acceleration_distance, self.waypoints.distance(self.last_stop_wp, i)))
-            v = self.max_acceleration + (wp.twist.twist.linear.x - self.velocity) * ((dist / self.acceleration_distance) ** 2)
+            v = wp.twist.twist.linear.x * dist / self.acceleration_distance
             v = v if v > self.acceleration_start_velocity else max(self.velocity, self.acceleration_start_velocity)
             p.twist.twist.linear.x = min(v, wp.twist.twist.linear.x)
             waypoints.append(p)
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
-                rospy.loginfo("%s -> %s, distance: %f, velocity: %f", i, self.last_stop_wp, self.waypoints.distance(self.last_stop_wp, i), v)
+                rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", i, self.last_stop_wp, self.waypoints.distance(self.last_stop_wp, i), v)
         return waypoints
         
     def pose_cb(self, msg):

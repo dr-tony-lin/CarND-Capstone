@@ -42,6 +42,7 @@ class Waypoints(object):
         for i in range(1, len(waypoints)):
             self.waypoints[i].d = self.waypoints[i-1].d + dl(self.waypoints[i-1], self.waypoints[i])
         self.total_length = self.waypoints[-1].d + dl(self.waypoints[-1], self.waypoints[0])
+        self.average_waypoint_length = self.total_length / len(self.waypoints)
         if self.loglevel >= 4:
             rospy.loginfo("Initialized Waypoints.")
         if self.loglevel >= 5:
