@@ -116,9 +116,9 @@ class WaypointUpdater(object):
             p.pose = wp.pose
             dist = max(0.0, self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)
             if self.traffic_light_status.state == TrafficLight.RED: # red light, stop
-                v = self.max_deceleration * dist / stop_dist if dist > 0 else 0
+                v = max(self.velocity, self.max_deceleration) * dist / stop_dist if dist > 0 else 0
             elif dist > self.yellow_light_full_speed_distance: # yellow light, enough distance to stop
-                v = self.max_deceleration * self.yellow_light_decel_ratio * dist / stop_dist if dist > 0 else 0
+                v = max(self.velocity, self.max_deceleration) * self.yellow_light_decel_ratio * dist / stop_dist if dist > 0 else 0
             else: # distance to light is too short, we will keep going
                 v = wp.twist.twist.linear.x
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
