@@ -250,6 +250,7 @@ bool PurePursuit::verifyFollowing() const
 
 geometry_msgs::Twist PurePursuit::calcTwist(double curvature, double cmd_velocity) const
 {
+  ROS_INFO_STREAM("Curvature: " << curvature);
   geometry_msgs::Twist twist;
   twist.linear.x = cmd_velocity;
   twist.angular.z = current_velocity_.twist.linear.x * curvature;

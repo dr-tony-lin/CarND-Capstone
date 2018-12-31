@@ -33,14 +33,15 @@ class Controller(object):
         self.last_time = current_time
         
         brake = 0
-        if target_linear_velocity <= self.full_stop_brake_limit and velocity < 1: # target velocity is 0, and current velocity is small, set brake to 400 (1m/s^2)
+        if target_linear_velocity <= self.full_stop_brake_limit and velocity < 1: # target velocity is 0, and current velocity is small
             throttle = 0
             brake = self.full_stop_brake_keep
         elif error < self.brake_deceleration_start: # target velocity is lower than current velocity, apply brake
             throttle = 0
             decel = max(error, self.vehicle.decel_limit)
             brake = -decel * self.vehicle.mass * self.vehicle.wheel_radius
+
         if self.loglevel >= 4:
             rospy.loginfo("Control (%s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, throttle, steering, brake)
-        return throttle if brake <= 1 else 0, brake, steering
+        return throttle, brake, steering
 

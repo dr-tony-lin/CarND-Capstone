@@ -10,3 +10,10 @@ class Vehicle(object):
         self.steering_ratio = steering_ratio
         self.max_lateral_accel = max_lateral_accel
         self.max_steering_angle = max_steering_angle
+
+    def __repr__(self):
+        return "Vehicle:\n\tMass: {},\n\tDecel limit: {},\n\tAccel limit: {},\n\tWheel: {},\n\tLength: {},\n\tSteer Ratio: {},\n\tMax lateral Accel: {},\n\tMax steering: {},\n".format(\
+                    self.mass, self.decel_limit, self.accel_limit, self.wheel_radius, self.wheel_base, self.steering_ratio, self.max_lateral_accel, self.max_steering_angle)
+    
+    def __str__(self):
+        return self.__repr__()

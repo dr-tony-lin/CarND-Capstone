@@ -66,7 +66,6 @@ private:
   double maximum_lookahead_distance_ratio_;
   double displacement_threshold_;
   double relative_angle_threshold_;
-  int loglevel_ = 3;
 
   bool waypoint_set_;
   bool pose_set_;
@@ -74,6 +73,7 @@ private:
   int num_of_next_waypoint_;
   geometry_msgs::Point position_of_next_target_;
   double lookahead_distance_;
+  int loglevel_;
 
   geometry_msgs::PoseStamped current_pose_;
   geometry_msgs::TwistStamped current_velocity_;
@@ -105,12 +105,12 @@ public:
     , velocity_set_(false)
     , num_of_next_waypoint_(-1)
     , lookahead_distance_(0)
+    , loglevel_(loglevel)
   {
     const_lookahead_distance_ = const_lookahead_distance;
     lookahead_distance_calc_ratio_ = lookahead_distance_calc_ratio;
     minimum_lookahead_distance_ = minimum_lookahead_distance;
     maximum_lookahead_distance_ratio_ = maximum_lookahead_distance_ratio;
-    loglevel_ = loglevel;
   }
   ~PurePursuit()
   {
