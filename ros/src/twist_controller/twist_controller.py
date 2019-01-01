@@ -9,7 +9,7 @@ ONE_MPH = 0.44704
 class Controller(object):
     def __init__(self, vehicle):
         self.loglevel = rospy.get_param('/loglevel', 3)
-        self.max_throttle = rospy.get_param('~max_throttle', 0.8)
+        self.max_throttle = rospy.get_param('/max_throttle', 0.8)
         self.full_stop_brake_keep = rospy.get_param('~full_stop_brake_keep', 1200)
         self.full_stop_brake_limit = rospy.get_param('~full_stop_brake_limit', 0.1)
         self.brake_deceleration_start = rospy.get_param('~brake_deceleration_start', -0.3)

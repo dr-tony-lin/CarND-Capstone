@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" >
-        <param name="lookahead_wps" value="12" />
+        <param name="lookahead_wps" value="20" />
         <param name="waypoint_update_frequency" value="50" />
         <param name="traffic_light_full_stop_distance" value="2." />
         <param name="traffic_light_over_distance" value="2." />

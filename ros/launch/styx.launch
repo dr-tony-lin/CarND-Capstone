@@ -3,8 +3,6 @@
     <!-- Log Level -->
     <param name="loglevel" value="5" />
     
-    <param name="velocity_limit" value="50" /> <!-- the velocity limit of the road -->
-
 	<!-- the number of waypoint to start processing the traffic lights -->
     <param name="traffic_light_lookahead_wps" value="60" />
     

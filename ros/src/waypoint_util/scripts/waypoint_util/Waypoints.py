@@ -33,7 +33,7 @@ class Point:
         return self.waypoint.twist
 
 class Waypoints(object):
-    def __init__(self, waypoints, circular=False, loglevel=3):
+    def __init__(self, waypoints, circular=True, loglevel=3):
         self.loglevel = loglevel
         self.circular = circular
         self.waypoints  = [Point(waypoint, 0) for waypoint in waypoints]
@@ -54,11 +54,14 @@ class Waypoints(object):
 
     def __getitem__(self, index):
         if self.circular:
-            result = self.waypoints[self.normalize_index(index)]
-            if index is slice and index.stop > len(self.waypoints):
-                stop = min(slice.stop - len(self.waypoints), len(self.waypoints))
-                result.extend(self.waypoints[slice(0, stop, index.step)])
-            return result
+            if isinstance(index, slice):
+                result = self.waypoints[index]
+                if index.stop > len(self.waypoints):
+                    stop = min(index.stop - len(self.waypoints), len(self.waypoints))
+                    result.extend(self.waypoints[slice(0, stop, index.step)])
+                return result
+            else:
+                return self.waypoints[self.normalize_index(index)]
         else:
             return self.waypoints[index]
 
@@ -73,20 +76,6 @@ class Waypoints(object):
             clamp True to clamp the idx to the valid range
         '''
         return idx % len(self.waypoints) if self.circular else min(idx, len(self.waypoints) - 1) if clamp else idx
-
-    def _create_waypoint(self, wp):
-        p = Waypoint()
-        p.pose = wp.pose
-        p.twist = wp.twist
-        return p
-
-    def get_waypoints(self, index):
-        '''
-        Get an array of waypoints given the index
-        Parameters:
-            index the slice of waypoints to get
-        '''
-        return [self._create_waypoint(wp) for wp in self.__getitem__(index)]
 
     def find_closest_waypoint(self, pos):
         '''
@@ -124,7 +113,7 @@ class Waypoints(object):
         '''
         return distance between wp1 and wp2
         '''
-        dist = self.waypoints[wp2].d - self.waypoints[wp1].d
+        dist = self.waypoints[self.normalize_index(wp2)].d - self.waypoints[self.normalize_index(wp1)].d
         if self.circular and dist < 0: # circled back, normalize the distance
             dist += self.total_length
         return dist

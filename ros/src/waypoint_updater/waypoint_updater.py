@@ -75,11 +75,12 @@ class WaypointUpdater(object):
                 self.pose_wpidx = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
                 # Try to estimate new pose if we missd few pose updates
                 if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
-                    dt = time.time() - self.pose_time + 0.1 # assume 0.l second latency
-                    if dt > 3.0 / self.waypoint_update_frequency:
+                    dt = time.time() - self.pose_time 
+                    if dt >= 3.0 / self.waypoint_update_frequency:
+                        dt += 0.1 # assume 0.l second latency
                         dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
                         dt2 = time.time() - self.velocity_time
-                        self.velocity = self.velocity_in + dv * dt2 * 0.6 # estimate the speed
+                        self.velocity = self.velocity_in + dv * (self.max_acceleration if dt2 >= 0 else self.max_acceleration) # estimate the speed
                         last = self.pose_wpidx
                         # Estimate the distance that the vehicle has moved
                         d = (self.velocity * 0.3 + self.last_lane.waypoints[-1].twist.twist.linear.x * 0.7) * dt if self.last_lane else self.velocity * dt
@@ -107,7 +108,7 @@ class WaypointUpdater(object):
             return lane
         else:
             self.start_decel_wpidx = None
-            lane.waypoints = self.waypoints.get_waypoints(slice(idx, idx+pts))
+            lane.waypoints = self.waypoints[idx:idx+pts+1]
             if self.loglevel >= 4:
                 rospy.loginfo("Waypoint update %s: velocity: %f", idx, lane.waypoints[0].twist.twist.linear.x)
                 rospy.loginfo("       Waypoint %s: velocity: %f", idx + pts - 1, lane.waypoints[-1].twist.twist.linear.x)
@@ -158,7 +159,15 @@ class WaypointUpdater(object):
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
                 rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", self.start_accel_wp, i, self.waypoints.distance(self.start_accel_wp, i), v)
         return waypoints
-        
+    
+    def different(self, p1, p2):
+        '''
+        Return True if 01 and p2 have the same x, and y
+        '''
+        if p1 and p1:
+            return p1.position.x != p2.position.x or p1.position.y != p2.position.y
+        return True
+
     def pose_cb(self, msg):
         self.pose_time = time.time()
         self.pose = msg.pose
