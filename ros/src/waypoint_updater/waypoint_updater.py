@@ -31,14 +31,10 @@ class WaypointUpdater(object):
         self.loglevel = rospy.get_param('/loglevel', 3)
         self.lookahead_wps = rospy.get_param('~lookahead_wps', 40)
         self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
-        self.yellow_light_full_speed_distance = rospy.get_param('~yellow_light_full_speed_distance', 30)
         self.traffic_light_full_stop_distance = rospy.get_param('~traffic_light_stop_distance', 5)
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
-        self.yellow_light_decel_ratio = rospy.get_param('~yellow_light_decel_ratio', 0.6)
         self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5)
         self.acceleration_distance = rospy.get_param('~acceleration_distance', 20)
-        self.traffic_light_over_distance = rospy.get_param('~traffic_light_over_distance', 2.0)
-        self.min_traffic_light_stop_seconds = rospy.get_param('~min_traffic_light_stop_seconds', 3.0)
         self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
         self.max_acceleration = -rospy.get_param('/accel_limit', 2.5)
 
@@ -77,7 +73,7 @@ class WaypointUpdater(object):
                 if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
                     dt = time.time() - self.pose_time 
                     if dt >= 3.0 / self.waypoint_update_frequency:
-                        dt += 0.1 # assume 0.l second latency
+                        dt += 0.1 # assume 0.l second latency also
                         dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
                         dt2 = time.time() - self.velocity_time
                         self.velocity = self.velocity_in + dv * (self.max_acceleration if dt2 >= 0 else self.max_acceleration) # estimate the speed
@@ -130,7 +126,7 @@ class WaypointUpdater(object):
                 self.start_accel_wp = idx
                 if self.loglevel >= 4:
                     rospy.loginfo("Cannot decelerate: %s -> %s, start %d, distance: %f, velocity: %f, required dist: %f, t: %f", idx, self.traffic_light_status.tlwpidx, self.start_decel_wpidx, dist, self.velocity, min_dist, t)
-        if not self.can_stop: # we can not stop accelerate to pass
+        if not self.can_stop: # we can not stop, so accelerate to pass
             self.start_decel_wpidx = None
             return self.accelerate_waypoints(idx, pts)
         for i in range(idx, idx + pts + 1):
@@ -159,14 +155,6 @@ class WaypointUpdater(object):
             if self.loglevel >= 4 and (i == idx or i == idx + pts):
                 rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", self.start_accel_wp, i, self.waypoints.distance(self.start_accel_wp, i), v)
         return waypoints
-    
-    def different(self, p1, p2):
-        '''
-        Return True if 01 and p2 have the same x, and y
-        '''
-        if p1 and p1:
-            return p1.position.x != p2.position.x or p1.position.y != p2.position.y
-        return True
 
     def pose_cb(self, msg):
         self.pose_time = time.time()
