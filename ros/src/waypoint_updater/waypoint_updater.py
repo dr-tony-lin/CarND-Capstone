@@ -67,7 +67,7 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(self.waypoint_update_frequency)
         while not rospy.is_shutdown():
-            if self.pose and self.waypoints:
+            if self.pose and self.waypoints and self.velocity:
                 self.pose_wpidx = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
                 # Try to estimate new pose if we missd few pose updates
                 if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:

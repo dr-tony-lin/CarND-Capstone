@@ -95,8 +95,8 @@ class TLDetector(object):
         if self.state_count <= 0 and time.time() - self.last_detection_time < self.traffic_light_detection_interval:
             return
         if time.time() - self.last_tl_off_time < self.traffic_light_off_idle_interval:
-            if self.loglevel >= 4:
-                rospy.loginfo("No detection %f %f %f", time.time(), self.last_tl_off_time, self.traffic_light_off_idle_interval)
+            if self.loglevel >= 5:
+                rospy.logdebug("No detection %f %f %f", time.time(), self.last_tl_off_time, self.traffic_light_off_idle_interval)
             return
 
         self.last_detection_time = time.time()
@@ -114,7 +114,7 @@ class TLDetector(object):
             self.state_count = 0
             self.state = state
         elif self.state_count >= self.state_count_threshold:
-            if state == TrafficLight.GREEN and self.last_state == TrafficLight.RED:
+            if state == TrafficLight.GREEN and self.last_state in (TrafficLight.RED, TrafficLight.YELLOW):
                 self.last_tl_off_time = time.time()
             self.last_state = self.state
             self.last_wp = light_wp
@@ -168,21 +168,20 @@ class TLDetector(object):
 
         if(self.pose):
             self.car_wpidx = self.waypoints.find_closest_waypoint([self.pose.pose.position.x, self.pose.pose.position.y])
+            for traffic_light_wp in self.traffic_light_waypoints:
+    #           rospy.loginfo("Traffic Waypoiny: %d", traffic_light_wp[1])
+    #           rospy.loginfo("Car position: %d", self.car_wpidx)
+                if traffic_light_wp[1] > self.car_wpidx:
+                    light = True
+                    light_id = traffic_light_wp[0]
+                    light_wp = traffic_light_wp[1]
+                    break
 
-        for traffic_light_wp in self.traffic_light_waypoints:
-#           rospy.loginfo("Traffic Waypoiny: %d", traffic_light_wp[1])
-#           rospy.loginfo("Car position: %d", self.car_wpidx)
-            if traffic_light_wp[1] > self.car_wpidx:
-                light = True
-                light_id = traffic_light_wp[0]
-                light_wp = traffic_light_wp[1]
-                break
-
-        if light and light_wp - self.car_wpidx < self.traffic_light_lookahead_wps:
-            state, max_output_score, _ = self.get_light_state(self.lights[light_id])
-            if self.loglevel >= 4:
-                rospy.loginfo("Traffic state: %d, score: %f", state, max_output_score)
-            return light_wp, state
+            if light and light_wp - self.car_wpidx < self.traffic_light_lookahead_wps:
+                state, max_output_score, _ = self.get_light_state(self.lights[light_id])
+                if self.loglevel >= 4:
+                    rospy.loginfo("Traffic state: %d, score: %f", state, max_output_score)
+                return light_wp, state
 
         return -1, TrafficLight.UNKNOWN
 
