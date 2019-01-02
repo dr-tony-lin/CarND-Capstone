@@ -89,10 +89,10 @@ class TLClassifier(object):
         if detected_class == 1:
             self.light = TrafficLight.GREEN
         elif detected_class == 2:
-            self.light = TrafficLight.YELLOW
-        elif detected_class == 3:
             self.light = TrafficLight.RED
-        elif detected_class == 0:
+        elif detected_class == 3:
+            self.light = TrafficLight.YELLOW
+        elif detected_class == 4:
             self.light = TrafficLight.UNKNOWN
             max_output_box = []
             
