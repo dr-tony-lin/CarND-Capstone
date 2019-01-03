@@ -18,6 +18,8 @@ class TLClassifier(object):
         # Select model according to sim value
         # ****************************************************************************
         # Please put the .pb files in the same directory as this tl_classifier.py file
+        # sim_frozen_inference_graph.pb <=> Graph for simulator classification
+        # frozen_inference_graph.pb <=> Graph for real-world classification
         # ****************************************************************************
         self.model_path = rospy.get_param('/traffic_light_classifier_model', 'frozen_inference_graph.pb')
 
