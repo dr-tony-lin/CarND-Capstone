@@ -174,7 +174,7 @@ class GenerateDiagnostics():
             else:
                 msg.encoding = 'rgb8'
 
-            self.camera_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            self.camera_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
