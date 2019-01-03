@@ -16,10 +16,11 @@
 
 ## Credits
 
-* The training data for traffic light detector was from https://github.com/alex-lechner/Traffic-Light-Classification
-* For the simulator, the traffic light classifier uses SSD Mobilenet implementation from https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md,
-commit dc78c085 for Tensorflow 1.3 compatibility
-* For the site, the traffic light classifier uses SSD inception V2 pre-trained model from https://github.com/alex-lechner/Traffic-Light-Classification
+* The traffic light detector/classifier used SSD Inception V2 from Tensorflow: http://download.tensorflow.org/models/object_detection/ssd_inception_v2_coco_11_06_2017.tar.gz
+
+. The training data for traffic light detector was from https://github.com/alex-lechner/Traffic-Light-Classification
+
+. THe usage section was from the original README.md from https://github/udacity/CarND-Capstone
 
 ## Usage
 
@@ -133,12 +134,11 @@ In addition, the following parameters are used for the classification:
 
 ### For the Simulator
 
-SSD Mobilenet V1 is used for detection and classification. It is re-trained from https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md,
-commit dc78c085 for Tensorflow 1.3 compatibility.
+The trained frozen model is: sim_frozen_inference_graph.pb
 
 ### For the Site
 
-The traffic light detection and classification uses a SSD Inception V2 pre-trained model from https://github.com/alex-lechner/Traffic-Light-Classification. It is based on commit f7e99c0 of https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md for Tensowflow 1.4 compatibility. It also works for Tendowflow 1.3.
+The trained frozen model is: frozen_inference_graph.pb
 
 ## Waypoint Updater Package
 
@@ -183,12 +183,15 @@ The Waypoints class defined in waypoint_util package provides the following Wayp
 * before: a predicate for determining if a waypoint is before another 
 
 ### Diagnostic Tool
+
 1. Make sure that the python dependencies installed before using the diagnosis tool
+
 ```
 pip install -r requirements_debug.txt
 ```
 
 2. Open a new terminal and source
+
 ```bash
 cd ~/CarND-Capstone
 cd ros
@@ -196,6 +199,7 @@ source devel/setup.bash
 ```
 
 3. Make the diagnosis python file executable
+
 ```bash
 cd src/tools
 chmod +x diagScreen.py
@@ -203,12 +207,16 @@ cd ~/CarND-Capstone/ros
 ```
 
 4. Run the diagnosis file
+
 ```bash
 rosrun tools diagScreen.py --screensize 5 --maxhistory 800 --textspacing 75 --fontsize 1.5
 ```
+
 Note that there are five options to choose the screensize:  
 help='Screen sizes: 1:2500x2500px, 2:1250x1250px, 3:833x833px, 4:625x625px, 5:500x500px '   
 You can choose anyone that you like.
+
+5. Run the simulator or real world testing
 
 ## Issues
 

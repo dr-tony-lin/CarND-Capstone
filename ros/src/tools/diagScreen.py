@@ -42,7 +42,7 @@ class GenerateDiagnostics():
         self.max_history_size = max_history
 
         # get waypoint configuration
-        with open(os.getcwd()+'/src/tl_detector/'+config_file, 'r') as myconfig:
+        with open(os.getcwd()+'/../tl_detector/'+config_file, 'r') as myconfig:
             config_string=myconfig.read()
             self.config = yaml.load(config_string)
 
@@ -174,7 +174,7 @@ class GenerateDiagnostics():
             else:
                 msg.encoding = 'rgb8'
 
-            self.camera_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            self.camera_image = self.bridge.imgmsg_to_cv2(msg, "rgb8")
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
