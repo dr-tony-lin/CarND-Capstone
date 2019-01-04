@@ -6,7 +6,7 @@ import time
 import rospy
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TwistStamped
-from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightStatus
+from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightStatus, AllTrafficLights
 from waypoint_util import Waypoints
 
 '''
@@ -35,6 +35,10 @@ class WaypointUpdater(object):
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
         self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5)
         self.acceleration_distance = rospy.get_param('~acceleration_distance', 20)
+        self.traffic_light_over_distance = rospy.get_param('~traffic_light_over_distance', 3)
+        self.max_velocity_near_traffic_light = rospy.get_param('~max_velocity_near_traffic_light', 40) * 1000. / 3600.
+        self.near_traffic_light_distance = rospy.get_param('~near_traffic_light_distance', 20)
+        self.far_traffic_light_distance = rospy.get_param('~far_traffic_light_distance', 75)
         self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
         self.max_acceleration = rospy.get_param('/accel_limit', 2.5)
 
@@ -47,18 +51,21 @@ class WaypointUpdater(object):
         self.waypoints_header = None
         self.traffic_light_status = None
         self.waypoints = None
+        self.all_traffic_lights = None
         self.start_accel_wp = None
         self.last_lane = None
         self.pose_wpidx = None
         self.can_stop = True
         self.stop_dist = None
         self.start_decel_wpidx = None
+        self.ready = False
 
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', TrafficLightStatus, self.traffic_cb, queue_size=1)
         rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb, queue_size=1)
+        rospy.Subscriber('/traffic_lights', AllTrafficLights, self.all_traffic_lights_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -67,7 +74,7 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(self.waypoint_update_frequency)
         while not rospy.is_shutdown():
-            if self.pose and self.waypoints and self.velocity:
+            if self.ready and self.pose and self.waypoints and self.velocity:
                 self.pose_wpidx = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
                 # Try to estimate new pose if we missd few pose updates
                 if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
@@ -103,8 +110,16 @@ class WaypointUpdater(object):
             lane.waypoints = self.accelerate_waypoints(idx, pts)
             return lane
         else:
-            self.start_decel_wpidx = None
-            lane.waypoints = self.waypoints[idx:idx+pts+1]
+            dv = self.waypoints[idx].twist.twist.linear.x - self.velocity
+            if dv < -self.max_deceleration * 3:
+                lane.waypoints = self.decelerate_waypoints(idx, pts)
+            elif dv > self.max_acceleration * 3:
+                self.start_accel_wp = idx
+                lane.waypoints = self.accelerate_waypoints(idx, pts)
+                return lane
+            else:
+                self.start_decel_wpidx = None
+                lane.waypoints = self.waypoints[idx:idx+pts+1]
             if self.loglevel >= 4:
                 rospy.loginfo("Waypoint update %s: velocity: %f", idx, lane.waypoints[0].twist.twist.linear.x)
                 rospy.loginfo("       Waypoint %s: velocity: %f", idx + pts - 1, lane.waypoints[-1].twist.twist.linear.x)
@@ -116,7 +131,7 @@ class WaypointUpdater(object):
         waypoints = []
         if self.start_decel_wpidx is None:
             self.start_decel_wpidx = idx
-            dist = self.waypoints.distance(self.start_decel_wpidx, self.traffic_light_status.tlwpidx)
+            dist = self.waypoints.distance(self.start_decel_wpidx, self.traffic_light_status.tlwpidx) + self.traffic_light_over_distance
             self.stop_dist = dist - self.traffic_light_full_stop_distance
             # Can we stop the vehicle?
             t = self.velocity / self.max_deceleration
@@ -133,7 +148,7 @@ class WaypointUpdater(object):
             wp = self.waypoints[i]
             p = Waypoint()
             p.pose = wp.pose
-            dist = max(0.0, self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)
+            dist = max(0.0, (self.waypoints.distance(i, self.traffic_light_status.tlwpidx) if i < self.traffic_light_status.tlwpidx else 0) - self.traffic_light_full_stop_distance)
             v = max(self.velocity, self.max_deceleration) * math.sqrt(dist / self.stop_dist) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
@@ -156,6 +171,16 @@ class WaypointUpdater(object):
                 rospy.loginfo("Accelerate: %s -> %s, distance: %f, velocity: %f", self.start_accel_wp, i, self.waypoints.distance(self.start_accel_wp, i), v)
         return waypoints
 
+    def set_road_velocity(self):
+        if self.waypoints and self.all_traffic_lights and not self.ready:
+            self.ready = True
+            for i in range(0, len(self.all_traffic_lights.indices)):
+                start = self.all_traffic_lights.indices[i-1] if i > 0 else 0
+                for j in range(start, self.all_traffic_lights.indices[i]):
+                    d = self.waypoints.distance(j, self.all_traffic_lights.indices[i])
+                    if self.near_traffic_light_distance < d < self.far_traffic_light_distance:
+                        self.waypoints[j].twist.twist.linear.x = self.max_velocity_near_traffic_light
+
     def pose_cb(self, msg):
         self.pose_time = time.time()
         self.pose = msg.pose
@@ -171,7 +196,12 @@ class WaypointUpdater(object):
     def waypoints_cb(self, waypoints):
         self.waypoints = Waypoints(waypoints.waypoints)
         self.waypoints_header = waypoints.header
-            
+        self.set_road_velocity()
+
+    def all_traffic_lights_cb(self, all_traffic_lights):
+        self.all_traffic_lights = all_traffic_lights
+        self.set_road_velocity()
+
     def traffic_cb(self, msg):
         self.traffic_light_status = msg
         if self.loglevel >= 4:

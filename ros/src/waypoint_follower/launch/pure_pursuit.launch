@@ -7,10 +7,10 @@
 		<param name="linear_interpolate_mode" value="$(arg linear_interpolate_mode)"/>
         <param name="publish_frequency" value="50" />
         <param name="subscriber_queue_length" value="1" />
-        <param name="const_lookahead_distance" value="6.0" />
-        <param name="minimum_lookahead_distance" value="9.0" />
-        <param name="lookahead_distance_ratio" value="5.0" />
-        <param name="maximum_lookahead_distance_ratio" value="5" />
+        <param name="const_lookahead_distance" value="3.0" />
+        <param name="minimum_lookahead_distance" value="3.0" />
+        <param name="lookahead_distance_ratio" value="4.0" />
+        <param name="maximum_lookahead_distance_ratio" value="15" />
 	</node>
 
 </launch>

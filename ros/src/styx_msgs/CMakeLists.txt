@@ -57,6 +57,7 @@ add_message_files(
   TrafficLightStatus.msg
   Waypoint.msg
   Lane.msg
+  AllTrafficLights.msg
 )
 
 ## Generate services in the 'srv' folder

@@ -139,6 +139,8 @@ Waypoint updater takes the following parameters:
 * /traffic_light_lookahead_wps: the number of waypoints that we need to decelerate for red light
 * acceleration_start_velocity: the velocity to start with when start the vehicle after stopping at traffic light
 * acceleration_distance: the target distance to accelerate to full velocity
+* far_traffic_light_distance: the distance to the next traffic from which we should reduce the velocity in order to be able to stop for red lights
+* near_traffic_light_distance: the distance to the next traffic from which we should regain the velocity so we will not pass green light at a velocity that is too slow
 * /accel_limit: maximum acceleration fo the vehicle
 * /decel_limit: maximum deceleration of the vehicle
 
@@ -194,7 +196,11 @@ THe WaypointUpdater provide waypoints for driving the vehicle alone the road. TH
 
 ### Deal with missing or late pose/velocity updates
 
-We have observed that from time to time, especially when more computation is being performed, the simulator may not publish pose and velocity update properly, this can cause the navigation to go off the road. In order to deal with, we added some extra logic in the WaypointUpdater to detect and compensate missing updates. This is done in every loop where we detected 3 or more missing updates.
+We have observed that from time to time, the simulator may not publish pose and velocity update properly when the system cannot not deliver the computational power required, this can cause the navigation to go off the road. In order to deal with, we added some extra logic in the WaypointUpdater to detect and compensate missing updates. This is done in every loop where the number of missing updates is above a threshold.
+
+### Allow Higher Velocity
+
+To allow the vehicle to run over 80 KM/h, we adjust the maximum speed of a waypoint according to the distance to the next traffic light, so the vehicle will not run at a speed that is difficult for the vehicle to stop.
 
 ## DBW Package
 
