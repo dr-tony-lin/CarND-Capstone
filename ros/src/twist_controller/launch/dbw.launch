@@ -3,7 +3,7 @@
     <node pkg="twist_controller" type="dbw_node.py" name="dbw_node">
         <param name="control_update_frequency" value="50" />
         <param name="full_stop_brake_keep" value="1200" /> <!-- brake to keep when keeping the vehicle to full stop -->
-        <param name="full_stop_brake_limit" value="0.1" /> <!-- when the target velocity is below this threshold, a constant brake will be applied -->
-        <param name="brake_deceleration_start" value="-0.3" /> <!-- the minimal deceleration from which brake should be applied -->
+        <param name="full_stop_brake_limit" value="0.01" /> <!-- when the target velocity is below this threshold, a constant brake will be applied -->
+        <param name="brake_deceleration_start" value="-0.2" /> <!-- the minimal deceleration from which brake should be applied -->
     </node>
 </launch>

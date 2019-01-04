@@ -4,7 +4,7 @@
     <param name="loglevel" value="5" />
     
 	<!-- the number of waypoint to start processing the traffic lights -->
-    <param name="traffic_light_lookahead_wps" value="60" />
+    <param name="traffic_light_lookahead_wps" value="80" />
     
     <!-- Vehicle parameters -->
     <param name="vehicle_mass" value="1080." />

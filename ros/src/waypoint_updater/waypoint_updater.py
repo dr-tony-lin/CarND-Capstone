@@ -36,7 +36,7 @@ class WaypointUpdater(object):
         self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5)
         self.acceleration_distance = rospy.get_param('~acceleration_distance', 20)
         self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
-        self.max_acceleration = -rospy.get_param('/accel_limit', 2.5)
+        self.max_acceleration = rospy.get_param('/accel_limit', 2.5)
 
         rospy.loginfo("Log level: %d, max deceleration: %f", self.loglevel, self.max_deceleration)
         self.velocity_in = None
@@ -72,8 +72,7 @@ class WaypointUpdater(object):
                 # Try to estimate new pose if we missd few pose updates
                 if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
                     dt = time.time() - self.pose_time 
-                    if dt >= 3.0 / self.waypoint_update_frequency:
-                        dt += 0.1 # assume 0.l second latency also
+                    if dt >= 4.0 / self.waypoint_update_frequency:
                         dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
                         dt2 = time.time() - self.velocity_time
                         self.velocity = self.velocity_in + dv * (self.max_acceleration if dt2 >= 0 else self.max_acceleration) # estimate the speed
@@ -83,6 +82,7 @@ class WaypointUpdater(object):
                         self.pose_wpidx += int(d / self.waypoints.average_waypoint_length + 0.5) # try to catch up the pose, round to the next integer
                         if self.loglevel >= 4:
                             rospy.loginfo("Catch pose %d -> %d, dist: %f, v: %f", last, self.pose_wpidx, d, self.velocity)
+
                 self.publish_waypoints(self.pose_wpidx, self.lookahead_wps)
             rate.sleep()
     
@@ -120,8 +120,8 @@ class WaypointUpdater(object):
             self.stop_dist = dist - self.traffic_light_full_stop_distance
             # Can we stop the vehicle?
             t = self.velocity / self.max_deceleration
-            min_dist = self.velocity*t - 0.5*self.max_deceleration*(t**2)
-            self.can_stop = self.velocity < 1 or (dist >= 0 and min_dist <= dist)
+            min_dist = max(0, self.velocity*t - 0.5*self.max_deceleration*(t**2))
+            self.can_stop = self.velocity < 1 or min_dist <= dist
             if not self.can_stop: # we can not stop accelerate to pass
                 self.start_accel_wp = idx
                 if self.loglevel >= 4:
@@ -134,7 +134,7 @@ class WaypointUpdater(object):
             p = Waypoint()
             p.pose = wp.pose
             dist = max(0.0, self.waypoints.distance(i, self.traffic_light_status.tlwpidx) - self.traffic_light_full_stop_distance)
-            v = max(self.velocity - self.max_deceleration, self.max_deceleration) * ((dist / self.stop_dist) ** 2) if dist > 0 else 0
+            v = max(self.velocity, self.max_deceleration) * math.sqrt(dist / self.stop_dist) if dist > 0 else 0
             p.twist.twist.linear.x = min(v if v >= 1 else 0, wp.twist.twist.linear.x)
             waypoints.append(p)
             if self.loglevel >= 4 and (i == idx or i == idx + pts):

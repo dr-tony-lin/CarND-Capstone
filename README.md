@@ -22,6 +22,29 @@
 
 . THe usage section was from the original README.md from https://github/udacity/CarND-Capstone
 
+## Build
+
+### Install Dependent Packages
+
+Before you can run catkin_make, you need to install dependent packages first:
+
+```
+cd ros
+rosdep update
+rosdep install --from-paths src --ignore-src --rosdistro=kinetic -y
+```
+
+### Make ros/src/CMakeLists.txt is linked
+
+After dependent packages are installed, make sure ros/src/CMakeLists.txt is linked to /opt/ros/kinetic/share/catkin/cmake/toplevel.cmake.
+Otherwise, make a symbolic link:
+
+'''
+cd ros/src
+rm CMakeLists.txt
+ln -s /opt/ros/kinetic/share/catkin/cmake/toplevel.cmake src/CMakeLists.txt
+'''
+
 ## Usage
 
 ### Run the simulator testing
@@ -34,6 +57,13 @@ catkin_make
 source devel/setup.sh
 roslaunch launch/styx.launch
 ```
+
+If catkin_make failed with error, try 
+'''
+catkin_make -j1
+'''
+
+to run the build sequentially.
 
 2. Launch the simulator, check <B>Camera</B> and uncheck <B>Manual</B>
 
@@ -61,6 +91,16 @@ roslaunch launch/site.launch
 ```
 
 5. Confirm that traffic light detection works on real life images
+
+### Trouble Shooting
+
+1. On docker, the traffic light detecter might encounter camera image shape index out of bound error. If this happen, update pillow with:
+
+'''
+pip install --upgrade pillow
+'''
+
+2. Running the simulator on a under powered system can be challenging, from time to time, the simulator will either stop sending pose and velocity updates, or send invalid pose and velocity (mostly 0 velocity) updates. It is important to make sure that your system has sufficient computation power to run ROS with the simulator.
 
 ## Configuration Parameters
 
@@ -218,17 +258,9 @@ You can choose anyone that you like.
 
 5. Run the simulator or real world testing
 
-## Issues
-
-We had lots of issues with the simulator, from time to time, the simulator will either stop sending pose and velocity updates, or send invalid pose and velocity (mostly 0 velocity) updates.
-
-We have tried to accommodated missing updates in the Waypoint Updater by estimating the possible velocity and pose when we detect missing updates.
-
-However, bogus updates cannot be detected and dealt with easily as there is no other basis for detecting whether an update from the simulator is valid or not.
-
-We have raised this issue in the student hub, but did not have any feedbacks on this yet.
 
 ## Discussion
 
-The baseline project uses the Pure Pursuit algorithm for controling the lateral and angular velocity of the vehicle, and PID for determining the throttle.
-It would be interesting to compare this with MPC.
+1. The baseline project uses the Pure Pursuit algorithm for controling the lateral and angular velocity of the vehicle, and PID for determining the throttle. It would be interesting to compare this with MPC.
+
+2. When passing traffic light, the latency caused by traffic light detection/classification can cause the vehicle to run red light when the light changes at sufficiently short distance. However, this may not be a serious issue as comparing to real life scenario, it would be more dangerous to apply fully brake at high speed.
