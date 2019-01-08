@@ -97,7 +97,7 @@ class TLDetector(object):
         """
         if self.waypoints is None:
             return
-        if self.state_count <= 1 and time.time() - self.last_detection_time < self.traffic_light_detection_interval:
+        if self.state_count >= self.state_count_threshold and time.time() - self.last_detection_time < self.traffic_light_detection_interval:
             return
         if time.time() - self.last_tl_off_time < self.traffic_light_off_idle_interval:
             if self.loglevel >= 5:
@@ -118,27 +118,29 @@ class TLDetector(object):
         if self.state != state:
             self.state_count = 1
             self.state = state
-        elif self.state_count >= self.state_count_threshold:
-            if state == TrafficLight.GREEN and self.last_state in (TrafficLight.RED, TrafficLight.YELLOW):
-                self.last_tl_off_time = time.time()
-            self.last_state = self.state
-            self.last_wp = light_wp
-            self.last_msg = state_msg = TrafficLightStatus()
-            state_msg.tlwpidx = light_wp
-            state_msg.state = state
-            self.upcoming_red_light_pub.publish(state_msg)
-        elif self.last_msg:
-            if self.car_wpidx < self.last_msg.tlwpidx + self.traffic_light_over_waypoints:
-                self.upcoming_red_light_pub.publish(self.last_msg)
-            else:
-                self.last_msg.tlwpidx = -1
-                self.last_msg.state = TrafficLight.UNKNOWN
-                self.upcoming_red_light_pub.publish(self.last_msg)
-                self.last_msg = None
+        else:
+            self.state_count += 1
+            if self.state_count >= self.state_count_threshold:
+                if state == TrafficLight.GREEN and self.last_state in (TrafficLight.RED, TrafficLight.YELLOW):
+                    self.last_tl_off_time = time.time()
+                self.last_state = self.state
+                self.last_wp = light_wp
+                self.last_msg = state_msg = TrafficLightStatus()
+                state_msg.tlwpidx = light_wp
+                state_msg.state = state
+                self.upcoming_red_light_pub.publish(state_msg)
+            elif self.last_msg: # have not reached the threshold
+                if self.car_wpidx < self.last_msg.tlwpidx + self.traffic_light_over_waypoints: 
+                    # keep sending previous message when we are still close to the current traffic light
+                    self.upcoming_red_light_pub.publish(self.last_msg)
+                else: # for other locations, clear traffic light status
+                    self.last_msg.tlwpidx = -1
+                    self.last_msg.state = TrafficLight.UNKNOWN
+                    self.upcoming_red_light_pub.publish(self.last_msg)
+                    self.last_msg = None
         if self.loglevel >= 4:
             rospy.loginfo("Curr Light_wp: %d, state: %d, global state: %d, last Light_wp: %d, state count: %d", light_wp, state, self.state, self.last_wp, self.state_count)
-        self.state_count += 1
-
+        
     def get_light_state(self, light):
         """Determines the current color of the traffic light
 
