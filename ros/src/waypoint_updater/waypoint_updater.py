@@ -40,12 +40,14 @@ class WaypointUpdater(object):
         self.max_velocity_near_traffic_light = rospy.get_param('~max_velocity_near_traffic_light', 40) * 1000. / 3600.
         self.near_traffic_light_distance = rospy.get_param('~near_traffic_light_distance', 20)
         self.far_traffic_light_distance = rospy.get_param('~far_traffic_light_distance', 75)
+        self.control_latency = rospy.get_param('~control_latency', 0.02)
         self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
         self.max_acceleration = rospy.get_param('/accel_limit', 2.5)
 
         rospy.loginfo("Log level: %d, max deceleration: %f", self.loglevel, self.max_deceleration)
         self.velocity_in = None
         self.pose = None
+        self.start_time = time.time()
         self.pose_time = None
         self.velocity = None
         self.velocity_time = None
@@ -81,8 +83,8 @@ class WaypointUpdater(object):
                 if self.loglevel >= 4:
                     rospy.loginfo("Updating %d, current v: %f", self.pose_wpidx, self.velocity)
                 # Try to estimate new pose if we missd few pose updates
-                if self.velocity is not None and self.velocity > 5 and self.pose_time is not None and self.last_lane is not None:
-                    dt = time.time() - self.pose_time 
+                if self.velocity > 5 and self.pose_time is not None and self.last_lane is not None:
+                    dt = time.time() - self.pose_time + self.control_latency
                     if dt >= 4.0 / self.waypoint_update_frequency:
                         dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
                         dt2 = time.time() - self.velocity_time
@@ -95,6 +97,8 @@ class WaypointUpdater(object):
                             rospy.loginfo("Catch pose %d -> %d, dist: %f, v: %f", last, self.pose_wpidx, d, self.velocity)
 
                 self.publish_waypoints(self.pose_wpidx, self.lookahead_wps)
+            elif self.velocity is None and time.time() - self.start_time >= 5:
+                self.velocity = 0.
             rate.sleep()
     
     def publish_waypoints(self, idx, pts):
@@ -177,6 +181,8 @@ class WaypointUpdater(object):
 
     def set_road_velocity(self):
         if self.waypoints and not self.ready:
+            if self.loglevel >= 4:
+                rospy.loginfo("Adjusting road velocity for traffic lights ...")
             stop_line_positions = self.config['stop_line_positions']
             self.all_traffic_lights = []
             for line in stop_line_positions:

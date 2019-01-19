@@ -10,5 +10,6 @@
         <param name="max_velocity_near_traffic_light" value="40" />
         <param name="far_traffic_light_distance" value="75" />
         <param name="near_traffic_light_distance" value="25" />
+        <param name="control_latency" value="0.05" />
     </node>
 </launch>
