@@ -4,7 +4,7 @@
     <param name="loglevel" value="5" />
 
 	<!-- the number of waypoint to start processing the traffic lights -->
-    <param name="traffic_light_lookahead_wps" value="80" />
+    <param name="traffic_light_lookahead_wps" value="40" />
     
     <!-- Vehicle parameters -->
     <param name="vehicle_mass" value="1736.35" />
@@ -16,7 +16,7 @@
     <param name="wheel_base" value="2.8498" />
     <param name="steer_ratio" value="14.8" />
     <param name="max_lat_accel" value="3." />
-    <param name="max_throttle" value="0.8" />
+    <param name="max_throttle" value="0.4" />
     <param name="max_steer_angle" value="8." />
 
     <!--DBW Node -->
@@ -29,7 +29,7 @@
     <include file="$(find waypoint_follower)/launch/pure_pursuit.launch"/>
 
     <!--Waypoint Updater Node -->
-    <include file="$(find waypoint_updater)/launch/waypoint_updater.launch"/>
+    <include file="$(find waypoint_updater)/launch/waypoint_updater_site.launch"/>
 
     <!--Traffic Light classifier model -->
     <param name="traffic_light_classifier_model" value="$(find tl_detector)/light_classification/frozen_inference_graph.pb" />

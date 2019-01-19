@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 <launch>
     <node pkg="waypoint_updater" type="waypoint_updater.py" name="waypoint_updater" >
-        <param name="lookahead_wps" value="20" />
+        <param name="lookahead_wps" value="15" />
         <param name="waypoint_update_frequency" value="50" />
         <param name="traffic_light_full_stop_distance" value="1." />
         <param name="traffic_light_over_distance" value="2." />
-        <param name="acceleration_start_velocity" value="15" />
+        <param name="acceleration_start_velocity" value="8" />
         <param name="acceleration_distance" value="20" />
-        <param name="max_velocity_near_traffic_light" value="40" />
-        <param name="far_traffic_light_distance" value="75" />
-        <param name="near_traffic_light_distance" value="25" />
+        <param name="max_velocity_near_traffic_light" value="30" />
+        <param name="far_traffic_light_distance" value="40" />
+        <param name="near_traffic_light_distance" value="20" />
     </node>
 </launch>

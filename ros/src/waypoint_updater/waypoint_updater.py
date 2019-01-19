@@ -34,7 +34,7 @@ class WaypointUpdater(object):
         self.waypoint_update_frequency = rospy.get_param('~waypoint_update_frequency', 50)
         self.traffic_light_full_stop_distance = rospy.get_param('~traffic_light_stop_distance', 5)
         self.traffic_light_lookahead_wps = rospy.get_param('/traffic_light_lookahead_wps', 50)
-        self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5)
+        self.acceleration_start_velocity = rospy.get_param('~acceleration_start_velocity', 5) * 1000. / 3600.
         self.acceleration_distance = rospy.get_param('~acceleration_distance', 20)
         self.traffic_light_over_distance = rospy.get_param('~traffic_light_over_distance', 3)
         self.max_velocity_near_traffic_light = rospy.get_param('~max_velocity_near_traffic_light', 40) * 1000. / 3600.
