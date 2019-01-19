@@ -5,7 +5,7 @@
         <param name="waypoint_update_frequency" value="50" />
         <param name="traffic_light_full_stop_distance" value="1." />
         <param name="traffic_light_over_distance" value="2." />
-        <param name="acceleration_start_velocity" value="5" />
+        <param name="acceleration_start_velocity" value="2" />
         <param name="acceleration_distance" value="20" />
         <param name="max_velocity_near_traffic_light" value="40" />
         <param name="far_traffic_light_distance" value="75" />

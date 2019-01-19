@@ -4,6 +4,7 @@ import numpy as np
 import math
 import time
 import rospy
+import yaml
 from geometry_msgs.msg import PoseStamped
 from geometry_msgs.msg import TwistStamped
 from styx_msgs.msg import Lane, Waypoint, TrafficLight, TrafficLightStatus, AllTrafficLights
@@ -60,12 +61,13 @@ class WaypointUpdater(object):
         self.start_decel_wpidx = None
         self.ready = False
 
+        self.config = yaml.load(rospy.get_param("/traffic_light_config"))
+
         rospy.Subscriber('/current_pose', PoseStamped, self.pose_cb, queue_size=1)
         rospy.Subscriber('/current_velocity', TwistStamped, self.velocity_cb, queue_size=1)
         rospy.Subscriber('/base_waypoints', Lane, self.waypoints_cb)
         rospy.Subscriber('/traffic_waypoint', TrafficLightStatus, self.traffic_cb, queue_size=1)
         rospy.Subscriber('/obstacle_waypoint', Lane, self.obstacle_cb, queue_size=1)
-        rospy.Subscriber('/traffic_lights', AllTrafficLights, self.all_traffic_lights_cb, queue_size=1)
 
         self.final_waypoints_pub = rospy.Publisher('final_waypoints', Lane, queue_size=1)
 
@@ -74,10 +76,12 @@ class WaypointUpdater(object):
     def loop(self):
         rate = rospy.Rate(self.waypoint_update_frequency)
         while not rospy.is_shutdown():
-            if self.ready and self.pose and self.waypoints and self.velocity:
+            if self.ready and self.pose and self.waypoints and self.velocity is not None:
                 self.pose_wpidx = self.waypoints.find_closest_waypoint([self.pose.position.x, self.pose.position.y])
+                if self.loglevel >= 4:
+                    rospy.loginfo("Updating %d, current v: %f", self.pose_wpidx, self.velocity)
                 # Try to estimate new pose if we missd few pose updates
-                if self.velocity is not None and self.pose_time is not None and self.last_lane is not None:
+                if self.velocity is not None and self.velocity > 5 and self.pose_time is not None and self.last_lane is not None:
                     dt = time.time() - self.pose_time 
                     if dt >= 4.0 / self.waypoint_update_frequency:
                         dv = self.last_lane.waypoints[-1].twist.twist.linear.x - self.last_lane.waypoints[0].twist.twist.linear.x
@@ -172,14 +176,22 @@ class WaypointUpdater(object):
         return waypoints
 
     def set_road_velocity(self):
-        if self.waypoints and self.all_traffic_lights and not self.ready:
-            self.ready = True
-            for i in range(0, len(self.all_traffic_lights.indices)):
-                start = self.all_traffic_lights.indices[i-1] if i > 0 else 0
-                for j in range(start, self.all_traffic_lights.indices[i]):
-                    d = self.waypoints.distance(j, self.all_traffic_lights.indices[i])
+        if self.waypoints and not self.ready:
+            stop_line_positions = self.config['stop_line_positions']
+            self.all_traffic_lights = []
+            for line in stop_line_positions:
+                idx = self.waypoints.find_closest_waypoint([line[0], line[1]])
+                self.all_traffic_lights.append(idx)
+            for i in range(0, len(self.all_traffic_lights) + 1):
+                start = self.all_traffic_lights[i-1] if i > 0 else 0
+                end = self.all_traffic_lights[i] if i < len(self.all_traffic_lights) \
+                        else self.all_traffic_lights[0] + len(self.waypoints)
+                for j in range(start, min(end, len(self.waypoints))):
+                    d = self.waypoints.distance(j, end)
+                    v = self.waypoints[j].twist.twist.linear.x
                     if self.near_traffic_light_distance < d < self.far_traffic_light_distance:
-                        self.waypoints[j].twist.twist.linear.x = self.max_velocity_near_traffic_light
+                        self.waypoints[j].twist.twist.linear.x = min(self.max_velocity_near_traffic_light, self.waypoints[j].twist.twist.linear.x)
+            self.ready = True
 
     def pose_cb(self, msg):
         self.pose_time = time.time()

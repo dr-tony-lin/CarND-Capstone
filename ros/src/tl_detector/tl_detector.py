@@ -61,7 +61,6 @@ class TLDetector(object):
         sub3 = rospy.Subscriber('/vehicle/traffic_lights', TrafficLightArray, self.traffic_cb)
         sub6 = rospy.Subscriber('/image_color', Image, self.image_cb, queue_size=1)
         
-        self.traffic_lights_pub = rospy.Publisher('/traffic_lights', AllTrafficLights, queue_size=1)
         self.upcoming_red_light_pub = rospy.Publisher('/traffic_waypoint', TrafficLightStatus, queue_size=1)
 
         rospy.spin()
@@ -74,15 +73,11 @@ class TLDetector(object):
             self.waypoints = Waypoints(waypoints.waypoints)
             # List of positions that correspond to the line to stop in front of for a given intersection
             stop_line_positions = self.config['stop_line_positions']
-            all_lights_msg = AllTrafficLights()
-            all_lights_msg.indices = []
             i = 0
             for line in stop_line_positions:
                 idx = self.waypoints.find_closest_waypoint([line[0], line[1]])
                 self.traffic_light_waypoints.append([i, idx])
-                all_lights_msg.indices.append(idx)
                 i = i + 1
-            self.traffic_lights_pub.publish(all_lights_msg)
 
     def traffic_cb(self, msg):
         self.lights = msg.lights
