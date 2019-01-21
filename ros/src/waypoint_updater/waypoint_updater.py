@@ -41,6 +41,7 @@ class WaypointUpdater(object):
         self.near_traffic_light_distance = rospy.get_param('~near_traffic_light_distance', 20)
         self.far_traffic_light_distance = rospy.get_param('~far_traffic_light_distance', 75)
         self.control_latency = rospy.get_param('~control_latency', 0.02)
+        self.velocity_timeout = rospy.get_param('~velocity_timeout', 1000000.)
         self.max_deceleration = -rospy.get_param('/decel_limit', -8.5)
         self.max_acceleration = rospy.get_param('/accel_limit', 2.5)
 
@@ -95,9 +96,8 @@ class WaypointUpdater(object):
                         self.pose_wpidx += int(d / self.waypoints.average_waypoint_length + 0.5) # try to catch up the pose, round to the next integer
                         if self.loglevel >= 4:
                             rospy.loginfo("Catch pose %d -> %d, dist: %f, v: %f", last, self.pose_wpidx, d, self.velocity)
-
                 self.publish_waypoints(self.pose_wpidx, self.lookahead_wps)
-            elif self.velocity is None and time.time() - self.start_time >= 5:
+            elif self.velocity is None and time.time() - self.start_time >= self.velocity_timeout:
                 self.velocity = 0.
             rate.sleep()
     
