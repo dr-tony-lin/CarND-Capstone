@@ -10,11 +10,14 @@ class LowPassFilter(object):
     def get(self):
         return self.last_val
 
+    def reset(self, val):
+        self.ready = True
+        self.last_val = val
+
     def filt(self, val):
         if self.ready:
             val = self.a * val + self.b * self.last_val
         else:
             self.ready = True
-
         self.last_val = val
         return val

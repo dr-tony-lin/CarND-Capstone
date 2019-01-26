@@ -18,8 +18,9 @@ class Controller(object):
         self.yaw_controller = YawController(vehicle, 0.1)
         self.throttle_controller = PID(0.4, 0.003, 0.04, 0, self.max_throttle)
         self.velocity_filter = LowPassFilter(0.2, 0.2)
-        self.throttle_filter = LowPassFilter(0.8, 0.2)
+        self.throttle_filter = LowPassFilter(1.8, 0.2)
         self.last_time = rospy.get_time()
+        self.throttle_filter.reset(0) # initialize it for throttle so we will not have large throttle at begining
 
     def reset(self):
         self.throttle_controller.reset()
@@ -31,8 +32,8 @@ class Controller(object):
         error = target_linear_velocity - velocity
         current_time = rospy.get_time()
         dt = current_time - self.last_time
-        throttle = self.throttle_controller.step(error, dt)
-        throttle = self.throttle_filter.filt(throttle)
+        throttle_raw = self.throttle_controller.step(error, dt)
+        throttle = self.throttle_filter.filt(throttle_raw)
         self.last_time = current_time
         
         brake = 0
@@ -45,6 +46,6 @@ class Controller(object):
             brake = -decel * self.vehicle.mass * self.vehicle.wheel_radius
 
         if self.loglevel >= 4:
-            rospy.loginfo("Control (%s, %s, %s, %s) -> throttle: %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, dt, throttle, steering, brake)
+            rospy.loginfo("Control (%s, %s, %s, %s) -> throttle: %s <- %s, steer: %s, brake: %s", target_linear_velocity, current_velocity, velocity, dt, throttle, throttle_raw, steering, brake)
         return throttle, brake, steering
 
